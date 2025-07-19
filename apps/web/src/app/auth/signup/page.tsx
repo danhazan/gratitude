@@ -1,7 +1,7 @@
 "use client"
 
 import { signIn } from "next-auth/react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Heart, Mail, Lock, Eye, EyeOff, User } from "lucide-react"
@@ -17,7 +17,16 @@ export default function SignupPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [providers, setProviders] = useState<any>({})
   const router = useRouter()
+
+  useEffect(() => {
+    // Fetch available providers
+    fetch("/api/auth/providers")
+      .then(res => res.json())
+      .then(data => setProviders(data))
+      .catch(err => console.error("Failed to fetch providers:", err))
+  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -84,6 +93,9 @@ export default function SignupPage() {
   const handleOAuthSignIn = (provider: string) => {
     signIn(provider, { callbackUrl: "/feed" })
   }
+
+  // Check if we have OAuth providers (excluding credentials)
+  const hasOAuthProviders = Object.keys(providers).some(key => key !== "credentials")
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -240,18 +252,22 @@ export default function SignupPage() {
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-3">
-              <button
-                onClick={() => handleOAuthSignIn("google")}
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-              >
-                Google
-              </button>
-              <button
-                onClick={() => handleOAuthSignIn("github")}
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-              >
-                GitHub
-              </button>
+              {hasOAuthProviders && (
+                <>
+                  <button
+                    onClick={() => handleOAuthSignIn("google")}
+                    className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                  >
+                    Google
+                  </button>
+                  <button
+                    onClick={() => handleOAuthSignIn("github")}
+                    className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                  >
+                    GitHub
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
