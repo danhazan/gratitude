@@ -4,10 +4,10 @@ from sqlalchemy.pool import StaticPool
 import os
 from typing import AsyncGenerator
 
-# Database URL - use SQLite for development, PostgreSQL for production
+# Database URL - use PostgreSQL for development and production
 DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "sqlite+aiosqlite:///./grateful.db"  # SQLite for development
+    "postgresql+asyncpg://grateful:password@localhost:5432/grateful"
 )
 
 # Create async engine
@@ -16,7 +16,6 @@ engine = create_async_engine(
     echo=True,  # Set to False in production
     pool_pre_ping=True,
     pool_recycle=300,
-    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
 )
 
 # Create async session factory
