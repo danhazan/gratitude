@@ -17,9 +17,26 @@ async def create_post(
     db: AsyncSession = Depends(get_db)
 ):
     """Create a new post."""
-    post_data = post_in.dict()
-    post_data["author_id"] = current_user.id
-    return await post.create(db, obj_in=post_in)
+    from app.models.post import Post
+    import uuid
+    
+    # Create post object directly with author_id
+    post_obj = Post(
+        id=str(uuid.uuid4()),
+        author_id=current_user.id,
+        content=post_in.content,
+        post_type=post_in.post_type,
+        title=post_in.title,
+        image_url=post_in.image_url,
+        location=post_in.location,
+        is_public=post_in.is_public
+    )
+    
+    db.add(post_obj)
+    await db.commit()
+    await db.refresh(post_obj)
+    
+    return post_obj
 
 @router.get("/feed", response_model=List[PostList])
 async def get_user_feed(
@@ -45,7 +62,7 @@ async def get_posts(
     elif post_type:
         return await post.get_by_type(db, post_type=post_type, skip=skip, limit=limit)
     else:
-        return await post.get_multi(db, skip=skip, limit=limit)
+        return await post.get_multi_with_author(db, skip=skip, limit=limit)
 
 @router.get("/{post_id}", response_model=PostList)
 async def get_post(

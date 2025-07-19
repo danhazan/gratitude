@@ -9,6 +9,39 @@ from app.models.interaction import Like, Comment, Follow
 from app.schemas.post import PostCreate, PostUpdate
 
 class CRUDPost(CRUDBase[Post, PostCreate, PostUpdate]):
+    async def get_multi_with_author(
+        self, 
+        db: AsyncSession, 
+        *, 
+        skip: int = 0, 
+        limit: int = 100
+    ) -> List[Post]:
+        """Get multiple posts with author information and interaction counts."""
+        query = (
+            select(Post)
+            .options(selectinload(Post.author))
+            .where(Post.is_public == True)
+            .order_by(desc(Post.created_at))
+            .offset(skip)
+            .limit(limit)
+        )
+        result = await db.execute(query)
+        posts = result.scalars().all()
+        
+        # Add interaction counts
+        for post in posts:
+            likes_count = await db.execute(
+                select(func.count(Like.id)).where(Like.post_id == post.id)
+            )
+            post.likes_count = likes_count.scalar()
+            
+            comments_count = await db.execute(
+                select(func.count(Comment.id)).where(Comment.post_id == post.id)
+            )
+            post.comments_count = comments_count.scalar()
+        
+        return posts
+
     async def get_with_author(self, db: AsyncSession, *, post_id: str, current_user_id: Optional[str] = None) -> Optional[Post]:
         """Get post with author information and interaction counts."""
         query = (

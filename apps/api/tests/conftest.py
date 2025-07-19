@@ -6,6 +6,7 @@ import pytest
 import pytest_asyncio
 import asyncio
 import os
+import jwt
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
@@ -14,6 +15,10 @@ from app.models import user, post, interaction
 
 # Set testing environment
 os.environ["TESTING"] = "true"
+
+# JWT settings for testing
+SECRET_KEY = "your-secret-key-here"
+ALGORITHM = "HS256"
 
 # Test database engine
 test_engine = create_async_engine(
@@ -142,14 +147,14 @@ async def test_user2(db_session):
 @pytest_asyncio.fixture
 async def test_post(db_session, test_user):
     """Create a test post."""
-    from app.models.post import Post
+    from app.models.post import Post, PostType
     import uuid
     
     post = Post(
         id=str(uuid.uuid4()),
         author_id=test_user.id,
         content="This is a test post content",
-        post_type="DAILY",  # Use valid enum value
+        post_type=PostType.DAILY,  # Use proper enum
         is_public=True
     )
     
@@ -157,4 +162,20 @@ async def test_post(db_session, test_user):
     await db_session.commit()
     await db_session.refresh(post)
     
-    return post 
+    return post
+
+@pytest.fixture
+def create_test_token():
+    """Create a JWT token for testing."""
+    def _create_token(user_id: str):
+        payload = {"sub": user_id, "type": "access"}
+        return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+    return _create_token
+
+@pytest.fixture
+def auth_headers(create_test_token):
+    """Create authentication headers for testing."""
+    def _auth_headers(user_id: str):
+        token = create_test_token(user_id)
+        return {"Authorization": f"Bearer {token}"}
+    return _auth_headers 
