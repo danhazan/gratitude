@@ -39,6 +39,13 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 # For testing - in-memory SQLite
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
+# Test engine for testing
+test_engine = create_async_engine(
+    TEST_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
+
 def get_test_engine():
     return create_async_engine(
         TEST_DATABASE_URL,

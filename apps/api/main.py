@@ -2,8 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
+import os
 from app.api.v1 import api_router
-from app.core.database import engine, Base
+from app.core.database import engine, Base, TEST_DATABASE_URL, test_engine
 import asyncio
 
 # Configure logging
@@ -15,9 +16,15 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting up Grateful API...")
     
-    # Create database tables
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # Use test database if TESTING environment variable is set
+    if os.getenv("TESTING"):
+        logger.info("Using test database")
+        async with test_engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    else:
+        # Create database tables
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
     
     logger.info("Database tables created successfully")
     yield

@@ -5,10 +5,15 @@ Pytest configuration and fixtures for testing.
 import pytest
 import pytest_asyncio
 import asyncio
+import os
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
+from fastapi.testclient import TestClient
 from app.core.database import Base, TEST_DATABASE_URL
 from app.models import user, post, interaction
+
+# Set testing environment
+os.environ["TESTING"] = "true"
 
 # Test database engine
 test_engine = create_async_engine(
@@ -56,10 +61,10 @@ async def db_session():
             await session.close()
 
 @pytest_asyncio.fixture
-async def test_client(db_session):
-    """Create a test client with database session."""
-    from fastapi.testclient import TestClient
+async def async_client(db_session):
+    """Create an async test client with database session."""
     from main import app
+    from app.core.database import get_db
     
     # Override the database dependency
     async def override_get_db():
@@ -72,5 +77,84 @@ async def test_client(db_session):
     
     app.dependency_overrides.clear()
 
-# Import the get_db function for dependency override
-from app.core.database import get_db 
+@pytest_asyncio.fixture
+async def test_client(db_session):
+    """Create a test client with database session."""
+    from fastapi.testclient import TestClient
+    from main import app
+    from app.core.database import get_db
+    
+    # Override the database dependency
+    async def override_get_db():
+        yield db_session
+    
+    app.dependency_overrides = {get_db: override_get_db}
+    
+    with TestClient(app) as client:
+        yield client
+    
+    app.dependency_overrides.clear()
+
+@pytest_asyncio.fixture
+async def test_user(db_session):
+    """Create a test user."""
+    from app.models.user import User
+    import uuid
+    
+    user = User(
+        id=str(uuid.uuid4()),
+        email=f"test-{uuid.uuid4()}@example.com",
+        username=f"testuser{uuid.uuid4().hex[:8]}",  # Remove hyphen
+        full_name="Test User",
+        bio="A test user for testing",
+        is_verified=True,
+        is_active=True
+    )
+    
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+    
+    return user
+
+@pytest_asyncio.fixture
+async def test_user2(db_session):
+    """Create a second test user."""
+    from app.models.user import User
+    import uuid
+    
+    user = User(
+        id=str(uuid.uuid4()),
+        email=f"test2-{uuid.uuid4()}@example.com",
+        username=f"testuser2{uuid.uuid4().hex[:8]}",  # Remove hyphen
+        full_name="Test User 2",
+        bio="A second test user for testing",
+        is_verified=True,
+        is_active=True
+    )
+    
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+    
+    return user
+
+@pytest_asyncio.fixture
+async def test_post(db_session, test_user):
+    """Create a test post."""
+    from app.models.post import Post
+    import uuid
+    
+    post = Post(
+        id=str(uuid.uuid4()),
+        author_id=test_user.id,
+        content="This is a test post content",
+        post_type="DAILY",  # Use valid enum value
+        is_public=True
+    )
+    
+    db_session.add(post)
+    await db_session.commit()
+    await db_session.refresh(post)
+    
+    return post 

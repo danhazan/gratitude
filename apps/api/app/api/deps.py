@@ -1,5 +1,5 @@
 from typing import AsyncGenerator, Optional
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
@@ -58,15 +58,18 @@ async def get_current_active_user(
 
 # Optional current user (for endpoints that work with or without authentication)
 async def get_optional_current_user(
-    db: AsyncSession = Depends(get_db),
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+    request: Request,
+    db: AsyncSession = Depends(get_db)
 ) -> Optional[dict]:
     """Get current user if authenticated, otherwise None."""
-    if not credentials:
+    authorization = request.headers.get("Authorization")
+    if not authorization or not authorization.startswith("Bearer "):
         return None
     
+    token = authorization.replace("Bearer ", "")
+    
     try:
-        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
         if user_id is None:
             return None
