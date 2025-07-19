@@ -19,9 +19,12 @@ class CRUDLike(CRUDBase[Like, LikeCreate, LikeCreate]):
         if existing_like.scalar_one_or_none():
             return None  # Like already exists
         
-        # Create new like
-        like_data = LikeCreate(post_id=post_id)
-        return await self.create(db, obj_in=like_data)
+        # Create new like directly
+        like = Like(user_id=user_id, post_id=post_id)
+        db.add(like)
+        await db.commit()
+        await db.refresh(like)
+        return like
 
     async def remove_like(self, db: AsyncSession, *, user_id: str, post_id: str) -> bool:
         """Remove a like."""
@@ -109,13 +112,13 @@ class CRUDComment(CRUDBase[Comment, CommentCreate, CommentUpdate]):
         parent_id: Optional[str] = None
     ) -> Comment:
         """Create a new comment."""
-        comment_data = CommentCreate(
+        comment = Comment(
+            author_id=author_id,
             post_id=post_id,
             content=content,
             parent_id=parent_id
         )
-        comment = await self.create(db, obj_in=comment_data)
-        comment.author_id = author_id
+        db.add(comment)
         await db.commit()
         await db.refresh(comment)
         return comment
@@ -133,10 +136,9 @@ class CRUDFollow(CRUDBase[Follow, FollowCreate, FollowCreate]):
         if existing_follow.scalar_one_or_none():
             return None  # Follow already exists
         
-        # Create new follow
-        follow_data = FollowCreate(followed_id=followed_id)
-        follow = await self.create(db, obj_in=follow_data)
-        follow.follower_id = follower_id
+        # Create new follow directly
+        follow = Follow(follower_id=follower_id, followed_id=followed_id)
+        db.add(follow)
         await db.commit()
         await db.refresh(follow)
         return follow
