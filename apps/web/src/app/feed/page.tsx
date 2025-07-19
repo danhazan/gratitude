@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useSession } from "next-auth/react"
+import { useSession, signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { Heart, MessageCircle, Share, Plus, Camera, MapPin, Calendar } from "lucide-react"
+import { Heart, MessageCircle, Share, Plus, Camera, MapPin, Calendar, LogOut } from "lucide-react"
 
 interface Post {
   id: string
@@ -25,6 +25,7 @@ export default function FeedPage() {
   const [showCreatePost, setShowCreatePost] = useState(false)
   const [posts, setPosts] = useState<Post[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [newPost, setNewPost] = useState({
     content: "",
     postType: "daily" as const,
@@ -99,6 +100,19 @@ export default function FeedPage() {
     }
   }
 
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    try {
+      await signOut({ 
+        callbackUrl: '/auth/login',
+        redirect: true 
+      })
+    } catch (error) {
+      console.error('Logout error:', error)
+      setIsLoggingOut(false)
+    }
+  }
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     const now = new Date()
@@ -140,6 +154,17 @@ export default function FeedPage() {
                   className="w-8 h-8 rounded-full"
                 />
                 <span className="text-sm text-gray-700">{session?.user?.name}</span>
+                <button
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                  className="flex items-center space-x-1 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50"
+                  title="Logout"
+                >
+                  <LogOut className="h-4 w-4" />
+                  {isLoggingOut && (
+                    <div className="animate-spin rounded-full h-3 w-3 border-b border-red-600"></div>
+                  )}
+                </button>
               </div>
             </div>
           </div>
