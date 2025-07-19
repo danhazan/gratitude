@@ -13,4 +13,8 @@ celery==5.5.3
 pillow==11.3.0
 cloudinary==1.42.0
 pytest==8.0.0
-httpx==0.28.0 
+httpx==0.28.0
+pytest-asyncio==0.24.0
+pytest-cov==5.0.0
+asyncpg==0.31.0
+PyJWT==2.10.0 

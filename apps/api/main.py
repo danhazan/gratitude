@@ -2,6 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
+from app.api.v1 import api_router
+from app.core.database import engine, Base
+import asyncio
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -11,7 +14,14 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting up Grateful API...")
+    
+    # Create database tables
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    
+    logger.info("Database tables created successfully")
     yield
+    
     # Shutdown
     logger.info("Shutting down Grateful API...")
 
@@ -31,13 +41,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Include API routes
+app.include_router(api_router, prefix="/api/v1")
+
 @app.get("/")
 async def root():
-    return {"message": "Welcome to Grateful API", "version": "1.0.0"}
+    return {
+        "message": "Welcome to Grateful API", 
+        "version": "1.0.0",
+        "docs": "/docs",
+        "redoc": "/redoc"
+    }
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy"}
+    return {"status": "healthy", "service": "grateful-api"}
 
 if __name__ == "__main__":
     import uvicorn
