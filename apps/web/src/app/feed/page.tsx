@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Heart, MessageCircle, Share, Plus, Camera, MapPin, Calendar } from "lucide-react"
@@ -9,12 +9,11 @@ interface Post {
   id: string
   content: string
   author: {
+    id: string
     name: string
     image: string
   }
   createdAt: string
-  likesCount: number
-  commentsCount: number
   postType: "daily" | "photo" | "spontaneous"
   imageUrl?: string
   location?: string
@@ -24,6 +23,8 @@ export default function FeedPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [showCreatePost, setShowCreatePost] = useState(false)
+  const [posts, setPosts] = useState<Post[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [newPost, setNewPost] = useState({
     content: "",
     postType: "daily" as const,
@@ -31,36 +32,28 @@ export default function FeedPage() {
     location: ""
   })
 
-  // Mock data for demonstration
-  const [posts, setPosts] = useState<Post[]>([
-    {
-      id: "1",
-      content: "I'm grateful for the beautiful sunset I witnessed today. Nature's daily reminder that even endings can be beautiful.",
-      author: {
-        name: "Sarah Johnson",
-        image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face"
-      },
-      createdAt: "2024-01-15T10:30:00Z",
-      likesCount: 24,
-      commentsCount: 8,
-      postType: "daily",
-      imageUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=400&fit=crop"
-    },
-    {
-      id: "2",
-      content: "Thankful for my morning coffee and the quiet moments before the day begins.",
-      author: {
-        name: "Mike Chen",
-        image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face"
-      },
-      createdAt: "2024-01-15T08:15:00Z",
-      likesCount: 12,
-      commentsCount: 3,
-      postType: "spontaneous"
+  // Fetch posts from API
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const response = await fetch('/api/posts')
+        if (response.ok) {
+          const data = await response.json()
+          setPosts(data.posts)
+        }
+      } catch (error) {
+        console.error('Failed to fetch posts:', error)
+      } finally {
+        setIsLoading(false)
+      }
     }
-  ])
 
-  if (status === "loading") {
+    if (status === 'authenticated') {
+      fetchPosts()
+    }
+  }, [status])
+
+  if (status === "loading" || isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -77,26 +70,33 @@ export default function FeedPage() {
   }
 
   const handleCreatePost = async () => {
-    if (!newPost.content.trim()) return
+    if (!newPost.content.trim() || !session?.user?.id) return
 
-    const post: Post = {
-      id: Date.now().toString(),
-      content: newPost.content,
-      author: {
-        name: session?.user?.name || "Anonymous",
-        image: session?.user?.image || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"
-      },
-      createdAt: new Date().toISOString(),
-      likesCount: 0,
-      commentsCount: 0,
-      postType: newPost.postType,
-      imageUrl: newPost.imageUrl || undefined,
-      location: newPost.location || undefined
+    try {
+      const response = await fetch('/api/posts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: newPost.content,
+          postType: newPost.postType,
+          authorId: session.user.id,
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        // Add the new post to the beginning of the list
+        setPosts([data.post, ...posts])
+        setNewPost({ content: "", postType: "daily", imageUrl: "", location: "" })
+        setShowCreatePost(false)
+      } else {
+        console.error('Failed to create post')
+      }
+    } catch (error) {
+      console.error('Error creating post:', error)
     }
-
-    setPosts([post, ...posts])
-    setNewPost({ content: "", postType: "daily", imageUrl: "", location: "" })
-    setShowCreatePost(false)
   }
 
   const formatDate = (dateString: string) => {
@@ -219,68 +219,84 @@ export default function FeedPage() {
       {/* Feed */}
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto space-y-6">
-          {posts.map((post) => (
-            <article key={post.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              {/* Post Header */}
-              <div className="p-4 border-b border-gray-100">
-                <div className="flex items-center space-x-3">
-                  <img
-                    src={post.author.image}
-                    alt={post.author.name}
-                    className="w-10 h-10 rounded-full"
-                  />
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900">{post.author.name}</h3>
-                    <div className="flex items-center space-x-2 text-sm text-gray-500">
-                      <Calendar className="h-4 w-4" />
-                      <span>{formatDate(post.createdAt)}</span>
-                      {post.location && (
-                        <>
-                          <MapPin className="h-4 w-4" />
-                          <span>{post.location}</span>
-                        </>
-                      )}
+          {posts.length === 0 ? (
+            <div className="text-center py-12">
+              <Heart className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No posts yet</h3>
+              <p className="text-gray-500 mb-6">
+                Be the first to share what you're grateful for!
+              </p>
+              <button
+                onClick={() => setShowCreatePost(true)}
+                className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                Create Your First Post
+              </button>
+            </div>
+          ) : (
+            posts.map((post) => (
+              <article key={post.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                {/* Post Header */}
+                <div className="p-4 border-b border-gray-100">
+                  <div className="flex items-center space-x-3">
+                    <img
+                      src={post.author.image || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"}
+                      alt={post.author.name}
+                      className="w-10 h-10 rounded-full"
+                    />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900">{post.author.name}</h3>
+                      <div className="flex items-center space-x-2 text-sm text-gray-500">
+                        <Calendar className="h-4 w-4" />
+                        <span>{formatDate(post.createdAt)}</span>
+                        {post.location && (
+                          <>
+                            <MapPin className="h-4 w-4" />
+                            <span>{post.location}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full capitalize">
+                      {post.postType}
                     </div>
                   </div>
-                  <div className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full capitalize">
-                    {post.postType}
+                </div>
+
+                {/* Post Content */}
+                <div className="p-4">
+                  <p className="text-gray-900 leading-relaxed">{post.content}</p>
+                  {post.imageUrl && (
+                    <img
+                      src={post.imageUrl}
+                      alt="Post image"
+                      className="w-full h-64 object-cover rounded-lg mt-4"
+                    />
+                  )}
+                </div>
+
+                {/* Post Actions */}
+                <div className="px-4 py-3 border-t border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-6">
+                      <button className="flex items-center space-x-2 text-gray-500 hover:text-red-500 transition-colors">
+                        <Heart className="h-5 w-5" />
+                        <span className="text-sm">0</span>
+                      </button>
+                      <button className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-colors">
+                        <MessageCircle className="h-5 w-5" />
+                        <span className="text-sm">0</span>
+                      </button>
+                      <button className="flex items-center space-x-2 text-gray-500 hover:text-green-500 transition-colors">
+                        <Share className="h-5 w-5" />
+                        <span className="text-sm">Share</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Post Content */}
-              <div className="p-4">
-                <p className="text-gray-900 leading-relaxed">{post.content}</p>
-                {post.imageUrl && (
-                  <img
-                    src={post.imageUrl}
-                    alt="Post image"
-                    className="w-full h-64 object-cover rounded-lg mt-4"
-                  />
-                )}
-              </div>
-
-              {/* Post Actions */}
-              <div className="px-4 py-3 border-t border-gray-100">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-6">
-                    <button className="flex items-center space-x-2 text-gray-500 hover:text-red-500 transition-colors">
-                      <Heart className="h-5 w-5" />
-                      <span className="text-sm">{post.likesCount}</span>
-                    </button>
-                    <button className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-colors">
-                      <MessageCircle className="h-5 w-5" />
-                      <span className="text-sm">{post.commentsCount}</span>
-                    </button>
-                    <button className="flex items-center space-x-2 text-gray-500 hover:text-green-500 transition-colors">
-                      <Share className="h-5 w-5" />
-                      <span className="text-sm">Share</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            ))
+          )}
         </div>
       </main>
     </div>

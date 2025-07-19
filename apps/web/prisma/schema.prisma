@@ -51,6 +51,17 @@ model User {
   updatedAt     DateTime  @updatedAt
   accounts      Account[]
   sessions      Session[]
+  posts         Post[]
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  content   String
+  postType  String   // 'daily', 'photo', 'spontaneous'
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
