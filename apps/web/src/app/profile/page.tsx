@@ -168,9 +168,9 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-10">
-      <div className="max-w-xl mx-auto bg-white rounded-lg shadow p-8">
+      <div className="max-w-xl mx-auto bg-white rounded-lg shadow p-8 relative flex flex-col min-h-[600px]">
         <Navbar boxed />
-        <div className="flex flex-col items-center">
+        <div className="flex flex-col items-center flex-1">
           <div className="relative">
             <img
               src={profile.image || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"}
@@ -282,6 +282,19 @@ export default function ProfilePage() {
         </div>
         {error && <div className="text-red-500 mt-4">{error}</div>}
         {success && <div className="text-green-600 mt-4">{success}</div>}
+        {/* Edit Profile Button at the bottom right */}
+        {!isEditing && (
+          <div className="flex justify-end mt-8">
+            <button
+              className="flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg shadow hover:bg-purple-700 transition-colors"
+              onClick={handleEdit}
+              aria-label="Edit Profile"
+            >
+              <Edit className="h-5 w-5 mr-1" />
+              <span>Edit Profile</span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
