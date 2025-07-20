@@ -46,6 +46,10 @@ def run_migrations_offline() -> None:
 
     """
     url = config.get_main_option("sqlalchemy.url")
+    if url is None:
+        url = os.environ.get("DATABASE_URL")
+        if url and url.startswith("postgresql+asyncpg://"):
+            url = url.replace("postgresql+asyncpg://", "postgresql://")
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -66,7 +70,9 @@ def run_migrations_online() -> None:
     """
     # Convert async URL to sync URL for alembic
     url = config.get_main_option("sqlalchemy.url")
-    if url.startswith("postgresql+asyncpg://"):
+    if url is None:
+        url = os.environ.get("DATABASE_URL")
+    if url and url.startswith("postgresql+asyncpg://"):
         url = url.replace("postgresql+asyncpg://", "postgresql://")
     
     connectable = engine_from_config(

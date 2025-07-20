@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 import logging
 import os
 from app.api.v1 import api_router
-from app.core.database import engine, Base, TEST_DATABASE_URL, test_engine
+from app.core.database import get_async_engine, Base, TEST_DATABASE_URL, get_test_engine
 import asyncio
 
 # Configure logging
@@ -19,10 +19,12 @@ async def lifespan(app: FastAPI):
     # Use test database if TESTING environment variable is set
     if os.getenv("TESTING"):
         logger.info("Using test database")
+        test_engine = get_test_engine()
         async with test_engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
     else:
         # Create database tables
+        engine = get_async_engine()
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
     

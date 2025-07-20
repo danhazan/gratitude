@@ -12,6 +12,8 @@ from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 from app.core.database import Base, TEST_DATABASE_URL
 from app.models import user, post, interaction
+import httpx
+from httpx import AsyncClient, ASGITransport
 
 # Set testing environment
 os.environ["TESTING"] = "true"
@@ -21,9 +23,10 @@ SECRET_KEY = "your-secret-key-here"
 ALGORITHM = "HS256"
 
 # Test database engine
+TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "postgresql+asyncpg://postgres:iamgreatful@localhost:5432/grateful_test")
 test_engine = create_async_engine(
     TEST_DATABASE_URL,
-    connect_args={"check_same_thread": False},
+    echo=True,
     pool_pre_ping=True,
 )
 
@@ -77,7 +80,8 @@ async def async_client(db_session):
     
     app.dependency_overrides = {get_db: override_get_db}
     
-    with TestClient(app) as client:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
         yield client
     
     app.dependency_overrides.clear()

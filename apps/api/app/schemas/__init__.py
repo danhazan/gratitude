@@ -1,10 +1,7 @@
-from .user import UserBase, UserCreate, UserUpdate, UserResponse, UserProfile, UserList
-from .post import PostBase, PostCreate, PostUpdate, PostResponse, PostWithAuthor, PostList, PostType
-from .interaction import (
-    LikeCreate, LikeResponse,
-    CommentBase, CommentCreate, CommentUpdate, CommentResponse, CommentWithAuthor,
-    FollowCreate, FollowResponse
-)
+from .user import *
+from .post import *
+from .interaction import *
+from .notification import *
 
 __all__ = [
     "UserBase", "UserCreate", "UserUpdate", "UserResponse", "UserProfile", "UserList",
