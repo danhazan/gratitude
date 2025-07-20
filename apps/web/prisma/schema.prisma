@@ -52,6 +52,22 @@ model User {
   accounts      Account[]
   sessions      Session[]
   posts         Post[]
+  hearts        Heart[]
+  // Profile fields
+  location      String?
+  about         String?
+  birthday      DateTime?
+  gender        Gender?
+  website       String?
+  interests     String[]
+  occupation    String?
+}
+
+enum Gender {
+  male
+  female
+  other
+  prefer_not_to_say
 }
 
 model Post {
@@ -62,6 +78,18 @@ model Post {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  hearts    Heart[]
+}
+
+model Heart {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
 }
 
 model VerificationToken {

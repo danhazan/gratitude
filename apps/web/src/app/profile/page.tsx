@@ -1,53 +1,85 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Heart, Edit, Camera, Settings, Calendar, MapPin, Users, MessageCircle } from "lucide-react"
+import Navbar from "@/components/Navbar"
 
 interface UserProfile {
   id: string
   name: string
   email: string
-  image: string
-  bio: string
-  location: string
-  joinedDate: string
-  stats: {
-    postsCount: number
-    followersCount: number
-    followingCount: number
-    heartsReceived: number
-  }
+  image: string | null
+  createdAt: string
+  updatedAt: string
+  location?: string
+  about?: string
+  birthday?: string
+  gender?: string
+  website?: string
+  interests?: string[]
+  occupation?: string
 }
 
 export default function ProfilePage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
-  const [profile, setProfile] = useState<UserProfile>({
-    id: "1",
-    name: session?.user?.name || "User",
-    email: session?.user?.email || "",
-    image: session?.user?.image || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-    bio: "I'm grateful for every day and the opportunity to share positivity with others.",
-    location: "San Francisco, CA",
-    joinedDate: "2024-01-01",
-    stats: {
-      postsCount: 42,
-      followersCount: 156,
-      followingCount: 89,
-      heartsReceived: 324
-    }
-  })
-
+  const [profile, setProfile] = useState<UserProfile | null>(null)
   const [editForm, setEditForm] = useState({
-    name: profile.name,
-    bio: profile.bio,
-    location: profile.location
+    name: "",
+    email: "",
+    image: "",
+    location: "",
+    about: "",
+    birthday: "",
+    gender: "prefer_not_to_say",
+    website: "",
+    interests: "",
+    occupation: ""
   })
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
-  if (status === "loading") {
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!session?.user?.id) return
+      setLoading(true)
+      setError(null)
+      try {
+        const res = await fetch(`/api/users/profile?userId=${session.user.id}`)
+        if (res.ok) {
+          const data = await res.json()
+          setProfile(data.user)
+          setEditForm({
+            name: data.user.name || "",
+            email: data.user.email || "",
+            image: data.user.image || "",
+            location: data.user.location || "",
+            about: data.user.about || "",
+            birthday: data.user.birthday ? data.user.birthday.slice(0, 10) : "",
+            gender: data.user.gender || "prefer_not_to_say",
+            website: data.user.website || "",
+            interests: (data.user.interests || []).join(", "),
+            occupation: data.user.occupation || ""
+          })
+        } else {
+          const data = await res.json()
+          setError(data.error || "Failed to load profile")
+        }
+      } catch (e) {
+        setError("Failed to load profile")
+      } finally {
+        setLoading(false)
+      }
+    }
+    if (status === "authenticated") fetchProfile()
+  }, [session?.user?.id, status])
+
+  if (status === "loading" || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -63,245 +95,194 @@ export default function ProfilePage() {
     return null
   }
 
-  const handleSaveProfile = () => {
-    setProfile({
-      ...profile,
-      ...editForm
-    })
-    setIsEditing(false)
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <p className="text-red-500">{error || "Profile not found."}</p>
+        </div>
+      </div>
+    )
   }
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+  const handleEdit = () => {
+    setIsEditing(true)
+    setSuccess(null)
+    setError(null)
+  }
+
+  const handleCancel = () => {
+    setIsEditing(false)
+    setEditForm({
+      name: profile.name || "",
+      email: profile.email || "",
+      image: profile.image || "",
+      location: profile.location || "",
+      about: profile.about || "",
+      birthday: profile.birthday || "",
+      gender: profile.gender || "prefer_not_to_say",
+      website: profile.website || "",
+      interests: (profile.interests || []).join(", "),
+      occupation: profile.occupation || ""
     })
+    setError(null)
+    setSuccess(null)
+  }
+
+  const handleSave = async () => {
+    setSaving(true)
+    setError(null)
+    setSuccess(null)
+    try {
+      const res = await fetch("/api/users/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: profile.id,
+          name: editForm.name,
+          email: editForm.email,
+          image: editForm.image,
+          location: editForm.location,
+          about: editForm.about,
+          birthday: editForm.birthday,
+          gender: editForm.gender,
+          website: editForm.website,
+          interests: editForm.interests.split(",").map((s: string) => s.trim()).filter(Boolean),
+          occupation: editForm.occupation
+        })
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setProfile(data.user)
+        setIsEditing(false)
+        setSuccess("Profile updated successfully!")
+      } else {
+        setError(data.error || "Failed to update profile")
+      }
+    } catch (e) {
+      setError("Failed to update profile")
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Heart className="h-6 w-6 text-purple-600" />
-              <span className="text-xl font-bold text-gray-900">Grateful</span>
-            </div>
-            <div className="flex items-center space-x-4">
+    <div className="min-h-screen bg-gray-50 py-10">
+      <div className="max-w-xl mx-auto bg-white rounded-lg shadow p-8">
+        <Navbar boxed />
+        <div className="flex flex-col items-center">
+          <div className="relative">
+            <img
+              src={profile.image || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"}
+              alt={profile.name}
+              className="w-28 h-28 rounded-full object-cover border-4 border-purple-200"
+            />
+            {isEditing && (
               <button
-                onClick={() => router.push("/feed")}
-                className="text-gray-600 hover:text-gray-900 transition-colors"
+                className="absolute bottom-0 right-0 bg-purple-600 text-white rounded-full p-2 shadow hover:bg-purple-700"
+                title="Change photo (stubbed)"
+                onClick={() => alert('Photo upload coming soon!')}
               >
-                Feed
+                <Camera className="h-5 w-5" />
               </button>
-              <div className="flex items-center space-x-2">
-                <img
-                  src={session?.user?.image || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face"}
-                  alt={session?.user?.name || "User"}
-                  className="w-8 h-8 rounded-full"
+            )}
+          </div>
+          <div className="mt-4 text-center">
+            {isEditing ? (
+              <>
+                <input
+                  type="text"
+                  className="text-xl font-bold text-gray-900 border-b border-gray-300 focus:outline-none focus:border-purple-500 bg-transparent text-center"
+                  value={editForm.name}
+                  onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                  maxLength={100}
+                  placeholder="Your name"
                 />
-                <span className="text-sm text-gray-700">{session?.user?.name}</span>
-              </div>
+                <input
+                  type="email"
+                  className="block mt-2 text-gray-600 border-b border-gray-300 focus:outline-none focus:border-purple-500 bg-transparent text-center mx-auto"
+                  value={editForm.email}
+                  onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))}
+                  maxLength={100}
+                  placeholder="Your email"
+                />
+              </>
+            ) : (
+              <>
+                <h2 className="text-xl font-bold text-gray-900">{profile.name}</h2>
+                <p className="text-gray-600">{profile.email}</p>
+              </>
+            )}
+            <div className="flex items-center justify-center space-x-2 mt-2 text-gray-500 text-sm">
+              <Calendar className="h-4 w-4" />
+              <span>Joined {new Date(profile.createdAt).toLocaleDateString()}</span>
             </div>
           </div>
         </div>
-      </header>
-
-      {/* Profile Content */}
-      <main className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          {/* Profile Header */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-            <div className="flex items-start space-x-6">
-              {/* Profile Image */}
-              <div className="relative">
-                <img
-                  src={profile.image}
-                  alt={profile.name}
-                  className="w-24 h-24 rounded-full object-cover"
-                />
-                <button className="absolute bottom-0 right-0 bg-purple-600 text-white p-2 rounded-full hover:bg-purple-700 transition-colors">
-                  <Camera className="h-4 w-4" />
-                </button>
+        <div className="mt-8">
+          {isEditing ? (
+            <form className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Name</label>
+                <input type="text" className="w-full p-2 border rounded" value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} maxLength={100} />
               </div>
-
-              {/* Profile Info */}
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900">{profile.name}</h1>
-                    <p className="text-gray-600">{profile.email}</p>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    {isEditing ? (
-                      <>
-                        <button
-                          onClick={() => setIsEditing(false)}
-                          className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={handleSaveProfile}
-                          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                        >
-                          Save
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        onClick={() => setIsEditing(true)}
-                        className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                      >
-                        <Edit className="h-4 w-4" />
-                        <span>Edit Profile</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {isEditing ? (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Name
-                      </label>
-                      <input
-                        type="text"
-                        value={editForm.name}
-                        onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Bio
-                      </label>
-                      <textarea
-                        value={editForm.bio}
-                        onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
-                        rows={3}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="Tell us about yourself..."
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Location
-                      </label>
-                      <input
-                        type="text"
-                        value={editForm.location}
-                        onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="Where are you located?"
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <p className="text-gray-700 mb-4">{profile.bio}</p>
-                    <div className="flex items-center space-x-4 text-sm text-gray-500">
-                      <div className="flex items-center space-x-1">
-                        <MapPin className="h-4 w-4" />
-                        <span>{profile.location}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Calendar className="h-4 w-4" />
-                        <span>Joined {formatDate(profile.joinedDate)}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Email</label>
+                <input type="email" className="w-full p-2 border rounded" value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} maxLength={100} />
               </div>
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 text-center">
-              <div className="text-2xl font-bold text-purple-600">{profile.stats.postsCount}</div>
-              <div className="text-sm text-gray-600">Posts</div>
-            </div>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 text-center">
-              <div className="text-2xl font-bold text-purple-600">{profile.stats.followersCount}</div>
-              <div className="text-sm text-gray-600">Followers</div>
-            </div>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 text-center">
-              <div className="text-2xl font-bold text-purple-600">{profile.stats.followingCount}</div>
-              <div className="text-sm text-gray-600">Following</div>
-            </div>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 text-center">
-              <div className="text-2xl font-bold text-purple-600">{profile.stats.heartsReceived}</div>
-              <div className="text-sm text-gray-600">Hearts Received</div>
-            </div>
-          </div>
-
-          {/* Recent Posts */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Gratitude Posts</h2>
-            <div className="space-y-4">
-              {/* Mock recent posts */}
-              <div className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center space-x-3 mb-3">
-                  <img
-                    src={profile.image}
-                    alt={profile.name}
-                    className="w-10 h-10 rounded-full"
-                  />
-                  <div>
-                    <h3 className="font-medium text-gray-900">{profile.name}</h3>
-                    <p className="text-sm text-gray-500">2 hours ago</p>
-                  </div>
-                </div>
-                <p className="text-gray-700 mb-3">
-                  "I'm grateful for the peaceful morning walks and the way the sunlight filters through the trees."
-                </p>
-                <div className="flex items-center space-x-4 text-sm text-gray-500">
-                  <div className="flex items-center space-x-1">
-                    <Heart className="h-4 w-4" />
-                    <span>12</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <MessageCircle className="h-4 w-4" />
-                    <span>3</span>
-                  </div>
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Location</label>
+                <input type="text" className="w-full p-2 border rounded" value={editForm.location} onChange={e => setEditForm(f => ({ ...f, location: e.target.value }))} maxLength={100} />
               </div>
-
-              <div className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center space-x-3 mb-3">
-                  <img
-                    src={profile.image}
-                    alt={profile.name}
-                    className="w-10 h-10 rounded-full"
-                  />
-                  <div>
-                    <h3 className="font-medium text-gray-900">{profile.name}</h3>
-                    <p className="text-sm text-gray-500">1 day ago</p>
-                  </div>
-                </div>
-                <p className="text-gray-700 mb-3">
-                  "Thankful for the amazing support from my friends and family during challenging times."
-                </p>
-                <div className="flex items-center space-x-4 text-sm text-gray-500">
-                  <div className="flex items-center space-x-1">
-                    <Heart className="h-4 w-4" />
-                    <span>8</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <MessageCircle className="h-4 w-4" />
-                    <span>2</span>
-                  </div>
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">About</label>
+                <textarea className="w-full p-2 border rounded" value={editForm.about} onChange={e => setEditForm(f => ({ ...f, about: e.target.value }))} maxLength={300} rows={3} />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Birthday</label>
+                <input type="date" className="w-full p-2 border rounded" value={editForm.birthday} onChange={e => setEditForm(f => ({ ...f, birthday: e.target.value }))} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Gender</label>
+                <select className="w-full p-2 border rounded" value={editForm.gender} onChange={e => setEditForm(f => ({ ...f, gender: e.target.value }))}>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                  <option value="prefer_not_to_say">Prefer not to say</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Website</label>
+                <input type="url" className="w-full p-2 border rounded" value={editForm.website} onChange={e => setEditForm(f => ({ ...f, website: e.target.value }))} maxLength={100} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Interests (comma separated)</label>
+                <input type="text" className="w-full p-2 border rounded" value={editForm.interests} onChange={e => setEditForm(f => ({ ...f, interests: e.target.value }))} maxLength={200} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Occupation</label>
+                <input type="text" className="w-full p-2 border rounded" value={editForm.occupation} onChange={e => setEditForm(f => ({ ...f, occupation: e.target.value }))} maxLength={100} />
+              </div>
+              <div className="flex space-x-3 mt-6">
+                <button type="button" onClick={handleCancel} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50" disabled={saving}>Cancel</button>
+                <button type="button" onClick={handleSave} className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled={saving}>{saving ? "Saving..." : "Save"}</button>
+              </div>
+            </form>
+          ) : (
+            <div className="space-y-2 mt-4 text-gray-700">
+              {profile.location && <div><span className="font-medium">Location:</span> {profile.location}</div>}
+              {profile.about && <div><span className="font-medium">About:</span> {profile.about}</div>}
+              {profile.birthday && <div><span className="font-medium">Birthday:</span> {new Date(profile.birthday).toLocaleDateString()}</div>}
+              {profile.gender && <div><span className="font-medium">Gender:</span> {profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1).replace(/_/g, ' ')}</div>}
+              {profile.website && <div><span className="font-medium">Website:</span> <a href={profile.website} className="text-purple-600 hover:underline" target="_blank" rel="noopener noreferrer">{profile.website}</a></div>}
+              {profile.interests && profile.interests.length > 0 && <div><span className="font-medium">Interests:</span> {profile.interests.join(", ")}</div>}
+              {profile.occupation && <div><span className="font-medium">Occupation:</span> {profile.occupation}</div>}
             </div>
-          </div>
+          )}
         </div>
-      </main>
+        {error && <div className="text-red-500 mt-4">{error}</div>}
+        {success && <div className="text-green-600 mt-4">{success}</div>}
+      </div>
     </div>
   )
 } 

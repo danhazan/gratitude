@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useSession, signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Heart, MessageCircle, Share, Plus, Camera, MapPin, Calendar, LogOut } from "lucide-react"
+import Navbar from "@/components/Navbar"
 
 interface Post {
   id: string
@@ -17,6 +18,8 @@ interface Post {
   postType: "daily" | "photo" | "spontaneous"
   imageUrl?: string
   location?: string
+  heartsCount?: number
+  isHearted?: boolean
 }
 
 export default function FeedPage() {
@@ -40,7 +43,27 @@ export default function FeedPage() {
         const response = await fetch('/api/posts')
         if (response.ok) {
           const data = await response.json()
-          setPosts(data.posts)
+          // Add hearts data to posts
+          const postsWithHearts = await Promise.all(
+            data.posts.map(async (post: Post) => {
+              try {
+                const heartsResponse = await fetch(`/api/posts/${post.id}/hearts`)
+                if (heartsResponse.ok) {
+                  const heartsData = await heartsResponse.json()
+                  return {
+                    ...post,
+                    heartsCount: heartsData.heartsCount,
+                    isHearted: heartsData.hearts.some((heart: any) => heart.user.id === session?.user?.id)
+                  }
+                }
+                return { ...post, heartsCount: 0, isHearted: false }
+              } catch (error) {
+                console.error('Failed to fetch hearts for post:', post.id, error)
+                return { ...post, heartsCount: 0, isHearted: false }
+              }
+            })
+          )
+          setPosts(postsWithHearts)
         }
       } catch (error) {
         console.error('Failed to fetch posts:', error)
@@ -52,7 +75,7 @@ export default function FeedPage() {
     if (status === 'authenticated') {
       fetchPosts()
     }
-  }, [status])
+  }, [status, session?.user?.id])
 
   if (status === "loading" || isLoading) {
     return (
@@ -88,8 +111,13 @@ export default function FeedPage() {
 
       if (response.ok) {
         const data = await response.json()
-        // Add the new post to the beginning of the list
-        setPosts([data.post, ...posts])
+        // Add the new post to the beginning of the list with hearts data
+        const newPostWithHearts = {
+          ...data.post,
+          heartsCount: 0,
+          isHearted: false
+        }
+        setPosts([newPostWithHearts, ...posts])
         setNewPost({ content: "", postType: "daily", imageUrl: "", location: "" })
         setShowCreatePost(false)
       } else {
@@ -97,6 +125,41 @@ export default function FeedPage() {
       }
     } catch (error) {
       console.error('Error creating post:', error)
+    }
+  }
+
+  const handleHeart = async (postId: string, isCurrentlyHearted: boolean) => {
+    if (!session?.user?.id) return
+
+    try {
+      const method = isCurrentlyHearted ? 'DELETE' : 'POST'
+      const response = await fetch(`/api/posts/${postId}/hearts`, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: session.user.id
+        }),
+      })
+
+      if (response.ok) {
+        // Update the post in the local state
+        setPosts(posts.map(post => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              heartsCount: isCurrentlyHearted ? (post.heartsCount || 1) - 1 : (post.heartsCount || 0) + 1,
+              isHearted: !isCurrentlyHearted
+            }
+          }
+          return post
+        }))
+      } else {
+        console.error('Failed to heart/unheart post')
+      }
+    } catch (error) {
+      console.error('Error hearting/unhearting post:', error)
     }
   }
 
@@ -125,52 +188,7 @@ export default function FeedPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Heart className="h-6 w-6 text-purple-600" />
-              <span className="text-xl font-bold text-gray-900">Grateful</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setShowCreatePost(true)}
-                className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
-              >
-                <Plus className="h-4 w-4" />
-                <span>Share Gratitude</span>
-              </button>
-              <button
-                onClick={() => router.push("/profile")}
-                className="text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                Profile
-              </button>
-              <div className="flex items-center space-x-2">
-                <img
-                  src={session?.user?.image || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face"}
-                  alt={session?.user?.name || "User"}
-                  className="w-8 h-8 rounded-full"
-                />
-                <span className="text-sm text-gray-700">{session?.user?.name}</span>
-                <button
-                  onClick={handleLogout}
-                  disabled={isLoggingOut}
-                  className="flex items-center space-x-1 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50"
-                  title="Logout"
-                >
-                  <LogOut className="h-4 w-4" />
-                  {isLoggingOut && (
-                    <div className="animate-spin rounded-full h-3 w-3 border-b border-red-600"></div>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
+      <Navbar />
       {/* Create Post Modal */}
       {showCreatePost && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -304,9 +322,16 @@ export default function FeedPage() {
                 <div className="px-4 py-3 border-t border-gray-100">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-6">
-                      <button className="flex items-center space-x-2 text-gray-500 hover:text-red-500 transition-colors">
-                        <Heart className="h-5 w-5" />
-                        <span className="text-sm">0</span>
+                      <button 
+                        onClick={() => handleHeart(post.id, post.isHearted || false)}
+                        className={`flex items-center space-x-2 transition-colors ${
+                          post.isHearted 
+                            ? 'text-red-500 hover:text-red-600' 
+                            : 'text-gray-500 hover:text-red-500'
+                        }`}
+                      >
+                        <Heart className={`h-5 w-5 ${post.isHearted ? 'fill-current' : ''}`} />
+                        <span className="text-sm">{post.heartsCount || 0}</span>
                       </button>
                       <button className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-colors">
                         <MessageCircle className="h-5 w-5" />

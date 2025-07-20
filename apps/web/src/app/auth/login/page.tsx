@@ -4,6 +4,7 @@ import { useState } from "react"
 import { signIn, useSession, signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Heart, LogOut } from "lucide-react"
+import Navbar from "@/components/Navbar"
 
 export default function LoginPage() {
   const { data: session, status } = useSession()
@@ -100,13 +101,10 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md mx-4">
+        <Navbar boxed />
         <div className="text-center mb-6">
-          <div className="flex items-center justify-center space-x-2 mb-4">
-            <Heart className="h-8 w-8 text-purple-600" />
-            <span className="text-2xl font-bold text-gray-900">Grateful</span>
-          </div>
           <h2 className="text-xl font-semibold text-gray-900">Welcome back</h2>
           <p className="text-gray-600 mt-2">Sign in to your account</p>
         </div>

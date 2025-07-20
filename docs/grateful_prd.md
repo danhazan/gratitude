@@ -8,6 +8,18 @@
 
 ---
 
+## Universal Navbar Requirement (2025-07-19)
+
+- The application must have a universal Navbar component that appears on every page.
+- On full-page layouts (feed, landing, etc.), the Navbar spans the top of the page.
+- On boxed layouts (login, signup, profile), the Navbar appears only within the box, not the full width of the page.
+- The Navbar always displays the 'Grateful' title.
+- Clicking the 'Grateful' title navigates to:
+  - The landing page (`/`) if the user is logged out
+  - The feed page (`/feed`) if the user is logged in
+
+---
+
 ## 1. Executive Summary
 
 ### 1.1 Project Overview

@@ -1,35 +1,11 @@
 import Link from 'next/link'
 import { Heart } from 'lucide-react'
+import Navbar from "@/components/Navbar"
 
-export default function HomePage() {
+export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-white">
-      {/* Navigation */}
-      <nav className="border-b border-gray-200">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Heart className="h-6 w-6 text-purple-600" />
-              <span className="text-xl font-bold text-gray-900">Grateful</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link 
-                href="/auth/login" 
-                className="text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                Sign In
-              </Link>
-              <Link 
-                href="/auth/signup" 
-                className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
-              >
-                Get Started
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
-
+    <>
+      <Navbar />
       {/* Mission Statement */}
       <main className="container mx-auto px-4 py-20">
         <div className="text-center max-w-4xl mx-auto">
@@ -43,6 +19,6 @@ export default function HomePage() {
           </p>
         </div>
       </main>
-    </div>
+    </>
   )
 }
