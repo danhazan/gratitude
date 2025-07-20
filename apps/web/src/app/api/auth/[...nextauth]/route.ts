@@ -9,7 +9,7 @@ import bcrypt from "bcryptjs"
 
 const prisma = new PrismaClient()
 
-export const authOptions: NextAuthOptions = {
+const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
     // Only add OAuth providers if environment variables are set

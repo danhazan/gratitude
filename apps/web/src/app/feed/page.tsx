@@ -277,18 +277,54 @@ export default function FeedPage() {
               </button>
             </div>
           ) : (
-            posts.map((post) => (
-              <article key={post.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <>
+              {/* Floating New Post Button */}
+              <div className="fixed bottom-6 right-6 z-40">
+                <button
+                  onClick={() => setShowCreatePost(true)}
+                  className="bg-purple-600 text-white p-4 rounded-full shadow-lg hover:bg-purple-700 transition-all duration-200 hover:scale-110"
+                  title="Create New Post"
+                >
+                  <Plus className="h-6 w-6" />
+                </button>
+              </div>
+              
+              {posts.map((post) => (
+              <article key={post.id} className={`${
+                post.postType === 'daily' 
+                  ? 'bg-white rounded-xl shadow-lg border-2 border-purple-100 overflow-hidden mb-8' // 3x larger, more prominent for daily
+                  : post.postType === 'photo' 
+                  ? 'bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden mb-6' // 2x boost for photo
+                  : 'bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-4' // Compact for spontaneous
+              }`}>
                 {/* Post Header */}
-                <div className="p-4 border-b border-gray-100">
+                <div className={`${
+                  post.postType === 'daily' 
+                    ? 'p-6 border-b border-gray-100' // Larger padding for daily
+                    : post.postType === 'photo' 
+                    ? 'p-5 border-b border-gray-100' // Medium padding for photo
+                    : 'p-3 border-b border-gray-100' // Compact padding for spontaneous
+                }`}>
                   <div className="flex items-center space-x-3">
                     <img
                       src={post.author.image || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"}
                       alt={post.author.name}
-                      className="w-10 h-10 rounded-full"
+                      className={`${
+                        post.postType === 'daily' 
+                          ? 'w-12 h-12' // Larger avatar for daily
+                          : post.postType === 'photo' 
+                          ? 'w-10 h-10' // Medium avatar for photo
+                          : 'w-8 h-8' // Compact avatar for spontaneous
+                      } rounded-full`}
                     />
                     <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">{post.author.name}</h3>
+                      <h3 className={`${
+                        post.postType === 'daily' 
+                          ? 'font-bold text-lg' // Larger, bolder name for daily
+                          : post.postType === 'photo' 
+                          ? 'font-semibold text-base' // Medium name for photo
+                          : 'font-medium text-sm' // Compact name for spontaneous
+                      } text-gray-900`}>{post.author.name}</h3>
                       <div className="flex items-center space-x-2 text-sm text-gray-500">
                         <Calendar className="h-4 w-4" />
                         <span>{formatDate(post.createdAt)}</span>
@@ -300,26 +336,56 @@ export default function FeedPage() {
                         )}
                       </div>
                     </div>
-                    <div className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full capitalize">
+                    <div className={`${
+                      post.postType === 'daily' 
+                        ? 'text-sm px-3 py-2 bg-purple-100 text-purple-700 rounded-full capitalize font-medium' // More prominent badge for daily
+                        : post.postType === 'photo' 
+                        ? 'text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full capitalize' // Medium badge for photo
+                        : 'text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full capitalize' // Muted badge for spontaneous
+                    }`}>
                       {post.postType}
                     </div>
                   </div>
                 </div>
 
                 {/* Post Content */}
-                <div className="p-4">
-                  <p className="text-gray-900 leading-relaxed">{post.content}</p>
+                <div className={`${
+                  post.postType === 'daily' 
+                    ? 'p-6' // 3x larger for daily gratitude
+                    : post.postType === 'photo' 
+                    ? 'p-5' // 2x boost for photo posts
+                    : 'p-3' // Compact for spontaneous text
+                }`}>
+                  <p className={`${
+                    post.postType === 'daily' 
+                      ? 'text-lg leading-relaxed' // Larger text for daily
+                      : post.postType === 'photo' 
+                      ? 'text-base leading-relaxed' // Medium text for photo
+                      : 'text-sm leading-relaxed' // Compact text for spontaneous
+                  } text-gray-900`}>{post.content}</p>
                   {post.imageUrl && (
                     <img
                       src={post.imageUrl}
                       alt="Post image"
-                      className="w-full h-64 object-cover rounded-lg mt-4"
+                      className={`${
+                        post.postType === 'daily' 
+                          ? 'w-full h-80 object-cover rounded-lg mt-4' // Larger image for daily
+                          : post.postType === 'photo' 
+                          ? 'w-full h-64 object-cover rounded-lg mt-4' // Medium image for photo
+                          : 'w-full h-48 object-cover rounded-lg mt-3' // Compact image for spontaneous
+                      }`}
                     />
                   )}
                 </div>
 
                 {/* Post Actions */}
-                <div className="px-4 py-3 border-t border-gray-100">
+                <div className={`${
+                  post.postType === 'daily' 
+                    ? 'px-6 py-4 border-t border-gray-100' // Larger padding for daily
+                    : post.postType === 'photo' 
+                    ? 'px-5 py-3 border-t border-gray-100' // Medium padding for photo
+                    : 'px-3 py-2 border-t border-gray-100' // Compact padding for spontaneous
+                }`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-6">
                       <button 
@@ -330,22 +396,59 @@ export default function FeedPage() {
                             : 'text-gray-500 hover:text-red-500'
                         }`}
                       >
-                        <Heart className={`h-5 w-5 ${post.isHearted ? 'fill-current' : ''}`} />
-                        <span className="text-sm">{post.heartsCount || 0}</span>
+                        <Heart className={`${
+                          post.postType === 'daily' 
+                            ? 'h-6 w-6' // Larger heart for daily
+                            : post.postType === 'photo' 
+                            ? 'h-5 w-5' // Medium heart for photo
+                            : 'h-4 w-4' // Compact heart for spontaneous
+                        } ${post.isHearted ? 'fill-current' : ''}`} />
+                        <span className={`${
+                          post.postType === 'daily' 
+                            ? 'text-base font-medium' // Larger text for daily
+                            : post.postType === 'photo' 
+                            ? 'text-sm' // Medium text for photo
+                            : 'text-xs' // Compact text for spontaneous
+                        }`}>{post.heartsCount || 0}</span>
                       </button>
-                      <button className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-colors">
-                        <MessageCircle className="h-5 w-5" />
-                        <span className="text-sm">0</span>
+                      <button className={`flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-colors ${
+                        post.postType === 'daily' 
+                          ? 'text-base' // Larger text for daily
+                          : post.postType === 'photo' 
+                          ? 'text-sm' // Medium text for photo
+                          : 'text-xs' // Compact text for spontaneous
+                      }`}>
+                        <MessageCircle className={`${
+                          post.postType === 'daily' 
+                            ? 'h-6 w-6' // Larger icon for daily
+                            : post.postType === 'photo' 
+                            ? 'h-5 w-5' // Medium icon for photo
+                            : 'h-4 w-4' // Compact icon for spontaneous
+                        }`} />
+                        <span>0</span>
                       </button>
-                      <button className="flex items-center space-x-2 text-gray-500 hover:text-green-500 transition-colors">
-                        <Share className="h-5 w-5" />
-                        <span className="text-sm">Share</span>
+                      <button className={`flex items-center space-x-2 text-gray-500 hover:text-green-500 transition-colors ${
+                        post.postType === 'daily' 
+                          ? 'text-base' // Larger text for daily
+                          : post.postType === 'photo' 
+                          ? 'text-sm' // Medium text for photo
+                          : 'text-xs' // Compact text for spontaneous
+                      }`}>
+                        <Share className={`${
+                          post.postType === 'daily' 
+                            ? 'h-6 w-6' // Larger icon for daily
+                            : post.postType === 'photo' 
+                            ? 'h-5 w-5' // Medium icon for photo
+                            : 'h-4 w-4' // Compact icon for spontaneous
+                        }`} />
+                        <span>Share</span>
                       </button>
                     </div>
                   </div>
                 </div>
               </article>
-            ))
+            ))}
+            </>
           )}
         </div>
       </main>

@@ -10,10 +10,7 @@ const prisma = globalForPrisma.prisma ?? new PrismaClient()
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
-export async function POST(
-  request: NextRequest,
-  params: Promise<{ params: { id: string } }>
-) {
+export async function POST(request: NextRequest, params: any) {
   try {
     // Handle both real requests and test mocks
     let body
@@ -34,7 +31,7 @@ export async function POST(
       )
     }
 
-    const { params: { id } } = await params
+    const { id } = params?.params || {}
 
     // Verify post exists
     const post = await prisma.post.findUnique({
@@ -86,10 +83,7 @@ export async function POST(
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  params: Promise<{ params: { id: string } }>
-) {
+export async function DELETE(request: NextRequest, params: any) {
   try {
     // Handle both real requests and test mocks
     let body
@@ -110,7 +104,7 @@ export async function DELETE(
       )
     }
 
-    const { params: { id } } = await params
+    const { id } = params?.params || {}
 
     // Find and delete the heart
     const heart = await prisma.heart.findUnique({
@@ -151,12 +145,10 @@ export async function DELETE(
   }
 }
 
-export async function GET(
-  request: NextRequest,
-  params: Promise<{ params: { id: string } }>
-) {
+export async function GET(request: NextRequest, params: any) {
   try {
-    const { params: { id } } = await params
+    const { id } = params?.params || {}
+    
     // Verify post exists
     const post = await prisma.post.findUnique({
       where: { id }

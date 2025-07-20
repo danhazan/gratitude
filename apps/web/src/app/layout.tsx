@@ -6,7 +6,7 @@ import { SessionProvider } from "@/components/providers/SessionProvider"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "❤️ Grateful",
+  title: "💜 Grateful",
   description: "A social platform for sharing gratitude and positive moments",
   icons: {
     icon: [
