@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.pool import StaticPool
+from sqlalchemy import MetaData, event
 import os
 from typing import AsyncGenerator
 
@@ -18,6 +19,13 @@ engine = create_async_engine(
     pool_recycle=300,
 )
 
+# Ensure search_path is set to public for every connection
+@event.listens_for(engine.sync_engine, "connect")
+def set_search_path(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute('SET search_path TO public')
+    cursor.close()
+
 # Create async session factory
 AsyncSessionLocal = sessionmaker(
     engine, 
@@ -25,8 +33,8 @@ AsyncSessionLocal = sessionmaker(
     expire_on_commit=False
 )
 
-# Base class for models
-Base = declarative_base()
+# Base class for models, set default schema to 'public'
+Base = declarative_base(metadata=MetaData(schema="public"))
 
 # Dependency to get database session
 async def get_db() -> AsyncGenerator[AsyncSession, None]:

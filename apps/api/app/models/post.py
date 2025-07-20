@@ -17,7 +17,7 @@ class Post(Base):
     author_id = Column(String, ForeignKey("users.id"), nullable=False)
     title = Column(String, nullable=True)
     content = Column(Text, nullable=False)
-    post_type = Column(Enum(PostType), default=PostType.DAILY, nullable=False)
+    post_type = Column(Enum(PostType, name="posttype", schema="public"), default=PostType.DAILY, nullable=False)
     image_url = Column(String, nullable=True)
     location = Column(String, nullable=True)
     is_public = Column(Boolean, default=True)
