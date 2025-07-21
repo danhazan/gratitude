@@ -205,8 +205,10 @@ CREATE TABLE posts (
 ## 6. MODULE 3: Social Interactions & Engagement
 
 ### 6.1 Technical Requirements
-- Like/heart system (no dislike option)
-- Comment threading (max 2 levels deep)
+- Heart/like system (no negative reactions)
+- Emoji reaction system with 8 positive emotion options (😍, 🤗, 🙏, 💪, 🌟, 🔥, 🥰, 👏)
+- Reaction viewer (see who reacted and with what)
+- One reaction per user per post (can change)
 - Share functionality (internal only)
 - Mention system (@username)
 - Notification system
@@ -214,36 +216,51 @@ CREATE TABLE posts (
 
 ### 6.2 User Stories
 ```
-As a user, I want to heart and comment on posts that resonate with me, so I can show support and build connections.
+As a user, I want to heart and react with emojis to posts that resonate with me, so I can show support and express different emotions positively.
 
-As a content creator, I want to see who engaged with my posts, so I can understand my impact and respond to comments.
+As a content creator, I want to see who engaged with my posts and what reactions they used, so I can understand my impact and connect with my community.
 
 As a community member, I want to share inspiring posts with my network, so I can spread positivity.
 ```
 
-### 6.3 Interaction Types
+### 6.3 Interaction Types (MVP)
 - **Hearts:** Primary positive reaction (unlimited)
-- **Comments:** Text responses (max 200 chars)
+- **Emoji Reactions:** Extended positive emotional responses (😍, 🤗, 🙏, 💪, 🌟, 🔥, 🥰, 👏)
+- **Reaction Viewer:** Pop-up showing all users and their specific reactions
 - **Shares:** Internal sharing to followers
 - **Bookmarks:** Private saving for later
 - **Mentions:** Tagging other users
 
-### 6.4 Engagement Rules
-- Only positive reactions allowed
-- Comments must be constructive
-- No spam or repetitive content
-- Rate limiting: 50 interactions/hour per user
+### 6.4 Interaction Types (Future - Phase 2)
+- **Comments:** Text responses (max 200 chars) - moved from MVP
+- **Comment Threading:** Max 2 levels deep - moved from MVP
 
-### 6.5 Database Schema
+### 6.5 Emoji Reaction System
+- **Initial State:** Heart button and reaction button (😊+) visible on posts
+- **First Interaction:** User taps reaction button to open emoji selector
+- **Emoji Selection:** Choose from 8 positive emotion emojis
+- **Post-Reaction State:** Reaction button shows count, tapping opens reaction viewer
+- **Reaction Viewer:** Modal/popup displaying a list of all users with their individual chosen reactions (one user per row)
+- **Reaction Changes:** Users can change their reaction by selecting a different emoji
+
+### 6.6 Engagement Rules
+- Only positive reactions allowed
+- No negative or controversial emoji options
+- Rate limiting: 50 interactions/hour per user
+- Users can only have one active reaction per post (can change)
+
+### 6.7 Database Schema
 ```sql
 CREATE TABLE interactions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
-  interaction_type VARCHAR(20) NOT NULL, -- 'heart', 'comment', 'share', 'bookmark'
-  content TEXT, -- for comments
+  interaction_type VARCHAR(20) NOT NULL, -- 'heart', 'emoji_reaction', 'share', 'bookmark'
+  emoji_code VARCHAR(20), -- for emoji reactions (e.g., 'heart_eyes', 'pray', 'star')
+  content TEXT, -- reserved for future comment system
   created_at TIMESTAMP DEFAULT NOW(),
-  UNIQUE(user_id, post_id, interaction_type) WHERE interaction_type != 'comment'
+  updated_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(user_id, post_id, interaction_type) WHERE interaction_type IN ('heart', 'emoji_reaction')
 );
 ```
 
@@ -457,16 +474,13 @@ CREATE TABLE notifications (
 ## 12. Technical Architecture
 
 ### 12.1 Technology Stack
-- **Frontend:** Next.js 15 with App Router, TypeScript, Tailwind CSS
-- **Backend:** FastAPI with Pydantic v2, PostgreSQL, Redis
-- **Authentication:** NextAuth.js with multiple providers
-- **State Management:** TanStack Query for server state
-- **Forms:** React Hook Form + Zod for validation
-- **UI Components:** Radix UI primitives with custom styling
-- **Image Upload:** Cloudinary for optimized image handling
-- **Background Tasks:** Celery for async processing
-- **Infrastructure:** Docker, GitHub Actions, Vercel/Railway
-- **Monitoring:** Sentry, Analytics platform
+- **Frontend:** Next.js (React, TypeScript, Tailwind CSS)
+- **Backend:** FastAPI (Python), PostgreSQL, Redis
+- **Authentication:** next-auth
+- **Image Upload:** Local storage for MVP (optionally S3/Cloudinary in future phases)
+- **Infrastructure:** Docker, Vercel (frontend), Railway (backend)
+- **Testing:** Jest (frontend), Pytest (backend)
+- **CI/CD:** GitHub Actions
 
 ### 12.2 Performance Requirements
 - **Load Time:** <2 seconds for initial page load
@@ -477,22 +491,18 @@ CREATE TABLE notifications (
 
 ### 12.3 Security Requirements
 - HTTPS encryption for all communications
-- Input validation and sanitization with Zod schemas
+- Input validation and sanitization
 - Rate limiting on all endpoints
-- SQL injection prevention with parameterized queries
+- SQL injection prevention
 - XSS protection measures
 - Regular security audits
-- NextAuth.js security best practices
 
 ### 12.4 Modern Development Approach
 - **Monorepo Structure:** Organized apps and packages for scalability
 - **Type Safety:** Full TypeScript implementation across frontend and backend
-- **Modern UI:** Tailwind CSS with Radix UI primitives for accessibility
-- **State Management:** TanStack Query for server state with optimistic updates
-- **Form Handling:** React Hook Form with Zod validation
-- **Image Optimization:** Cloudinary integration for automatic optimization
-- **Performance:** Next.js 15 with App Router for optimal loading
-- **Testing:** Comprehensive testing with Jest and Playwright
+- **Modern UI:** Tailwind CSS for accessibility
+- **Performance:** Next.js with App Router for optimal loading
+- **Testing:** Comprehensive testing with Jest and Pytest
 - **CI/CD:** GitHub Actions with automated testing and deployment
 
 ---
@@ -503,73 +513,23 @@ CREATE TABLE notifications (
 
 **🎯 MVP Success Criteria:**
 - New users can register and create their first gratitude post within 5 minutes
-- Users can view and interact with community gratitude posts
+- Users can view and interact with community gratitude posts using hearts and emoji reactions
 - Basic photo sharing with simple text works seamlessly
 - Mobile-responsive experience on all devices
 
-#### **TASK 1: User Authentication System** (Week 1-2)
-**Module Reference:** Section 4 - Authentication & User Management
-- [ ] NextAuth.js setup with email/password and OAuth providers
-- [ ] Google, Apple, and GitHub OAuth integration
-- [ ] Email verification with modern email templates
-- [ ] Password reset functionality with secure tokens
-- [ ] User profile creation with image upload
-**Acceptance Criteria:** User can register, verify email, and login successfully with modern UI
-
-#### **TASK 2: Basic User Profiles** (Week 2)
-**Module Reference:** Section 8 - User Profiles & Networking
-- [ ] Modern profile creation form with React Hook Form + Zod
-- [ ] Profile viewing page with responsive design
-- [ ] Real-time profile editing with optimistic updates
-- [ ] Public profile visibility with privacy controls
-- [ ] Cloudinary integration for profile photo uploads
-**Acceptance Criteria:** Users can create and view profiles with modern UI and photo upload
-
-#### **TASK 3: Gratitude Post Creation** (Week 3-4)
-**Module Reference:** Section 5 - Gratitude Post Creation & Management
-- [ ] Modern post creation interface with Tailwind CSS styling
-- [ ] Text input with character limits and real-time validation
-- [ ] Cloudinary integration for image upload, resize, and compression
-- [ ] Post type selection with visual indicators
-- [ ] Draft saving with TanStack Query for state management
-- [ ] Real-time preview with optimistic updates
-**Acceptance Criteria:** Users can create posts with photos and see immediate visual hierarchy with modern UI
-
-#### **TASK 4: Basic Feed System** (Week 4-5)
-**Module Reference:** Section 7 - Feed Algorithm & Content Discovery
-- [ ] Chronological feed display
-- [ ] Content hierarchy implementation (Daily 3x size, Photo 2x, Text compact)
-- [ ] Basic post rendering with images
-- [ ] Infinite scroll loading
-- [ ] Pull-to-refresh functionality
-**Acceptance Criteria:** Users see posts in proper visual hierarchy with photos displayed
-
-#### **TASK 5: Social Interactions** (Week 5-6)
+#### **TASK 5: Social Interactions - Hearts & Emoji Reactions** (Week 5-6)
 **Module Reference:** Section 6 - Social Interactions & Engagement
 - [ ] Heart/like functionality (no negative reactions)
-- [ ] Comment system (max 200 characters, positive only)
-- [ ] Basic notification system for interactions
+- [ ] Emoji reaction system with 8 positive emotion options (😍, 🤗, 🙏, 💪, 🌟, 🔥, 🥰, 👏)
+- [ ] Reaction button UI that shows emoji picker on first tap
+- [ ] Reaction viewer popup showing all users and their reactions
+- [ ] Basic notification system for hearts and emoji reactions
 - [ ] User mention functionality (@username)
-**Acceptance Criteria:** Users can heart posts, comment positively, and receive notifications
-
-#### **TASK 6: Follow System** (Week 6-7)
-**Module Reference:** Section 8 - User Profiles & Networking
-- [ ] Follow/unfollow users
-- [ ] Following/followers lists
-- [ ] Feed filtering by followed users
-- [ ] User discovery suggestions
-**Acceptance Criteria:** Users can follow others and see followed users' content prioritized
-
-#### **TASK 7: Mobile Optimization & Testing** (Week 7-8)
-**Module Reference:** All modules - responsive design
-- [ ] Mobile-responsive design implementation
-- [ ] Touch-friendly interface elements
-- [ ] Image optimization for mobile
-- [ ] Basic performance optimization
-- [ ] Cross-browser testing
-**Acceptance Criteria:** App works seamlessly on mobile devices with fast loading
+- [ ] Reaction count display and interaction states
+**Acceptance Criteria:** Users can heart posts, react with positive emojis, view who reacted with what, and receive notifications
 
 ### 13.2 Phase 2: Enhanced Social Features (6 weeks)
+- [ ] **Comment System:** Full commenting with threading (moved from MVP)
 - [ ] Advanced notification system
 - [ ] Content moderation tools
 - [ ] Search functionality
