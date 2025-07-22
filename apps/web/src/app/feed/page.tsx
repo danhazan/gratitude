@@ -33,6 +33,14 @@ export default function FeedPage() {
     location: ""
   })
 
+  // Redirect to landing if not authenticated
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !localStorage.getItem("access_token")) {
+      router.push("/")
+      return
+    }
+  }, [router])
+
   // Fetch posts from API
   useEffect(() => {
     const fetchPosts = async () => {

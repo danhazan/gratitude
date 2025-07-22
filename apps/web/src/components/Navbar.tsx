@@ -11,48 +11,21 @@ interface NavbarProps {
 
 export default function Navbar({ boxed, activeAuthTab }: NavbarProps) {
   const router = useRouter()
-  const [notifications, setNotifications] = useState<any[]>([])
-  const [unreadCount, setUnreadCount] = useState(0)
-  const [dropdownOpen, setDropdownOpen] = useState(false)
-  const dropdownRef = useRef<HTMLDivElement>(null)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const res = await fetch(`/api/notifications`)
-        if (res.ok) {
-          const data = await res.json()
-          setNotifications(data.notifications)
-          setUnreadCount(data.notifications.filter((n: any) => !n.readAt).length)
-        }
-      } catch {}
-    }
-    fetchNotifications()
+    // Demo: check for token in localStorage (replace with real logic as needed)
+    setIsAuthenticated(!!localStorage.getItem("access_token"))
   }, [])
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false)
-      }
-    }
-    if (dropdownOpen) document.addEventListener("mousedown", handleClick)
-    return () => document.removeEventListener("mousedown", handleClick)
-  }, [dropdownOpen])
-
-  const handleMarkAsRead = async (id: string) => {
-    // For now, just update UI (add API later)
-    setNotifications(notifications.map(n => n.id === id ? { ...n, readAt: new Date().toISOString() } : n))
-    setUnreadCount(notifications.filter(n => n.id !== id && !n.readAt).length)
+  const handleLogout = async () => {
+    localStorage.removeItem("access_token")
+    setIsAuthenticated(false)
+    router.push("/auth/login")
   }
 
   const handleTitleClick = () => {
-      router.push("/feed")
-  }
-
-  const handleLogout = async () => {
-    // No sign out logic here, as session is managed externally
+    router.push("/feed")
   }
 
   return (
@@ -74,38 +47,61 @@ export default function Navbar({ boxed, activeAuthTab }: NavbarProps) {
         Grateful
       </button>
       <div className="flex items-center space-x-2 relative">
-        {/* Notifications dropdown removed as session is not available */}
-        {/* Auth buttons removed as session is not available */}
-        <button
-          onClick={() => router.push('/auth/login')}
-          className={
-            [
-              'px-4 py-2 rounded font-semibold transition',
-              activeAuthTab === 'login'
-                ? 'bg-purple-600 text-white hover:bg-purple-700'
-                : boxed || activeAuthTab === undefined
-                  ? 'bg-transparent text-purple-700 hover:bg-purple-100'
-                  : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
-            ].join(' ')
-          }
-        >
-          Log in
-        </button>
-        <button
-          onClick={() => router.push('/auth/signup')}
-          className={
-            [
-              'px-4 py-2 rounded font-semibold transition',
-              activeAuthTab === 'signup'
-                ? 'bg-purple-600 text-white hover:bg-purple-700'
-                : boxed || activeAuthTab === undefined
-                  ? 'bg-transparent text-purple-700 hover:bg-purple-100'
-                  : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
-            ].join(' ')
-          }
-        >
-          Sign Up
-        </button>
+        {isAuthenticated ? (
+          <>
+            <button
+              onClick={() => router.push("/feed")}
+              className="px-4 py-2 rounded font-semibold transition bg-transparent text-purple-700 hover:bg-purple-100"
+            >
+              Feed
+            </button>
+            <button
+              onClick={() => router.push("/profile")}
+              className="px-4 py-2 rounded font-semibold transition bg-transparent text-purple-700 hover:bg-purple-100"
+            >
+              Profile
+            </button>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 rounded font-semibold transition bg-purple-100 text-purple-700 hover:bg-purple-200"
+            >
+              Logout
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={() => router.push('/auth/login')}
+              className={
+                [
+                  'px-4 py-2 rounded font-semibold transition',
+                  activeAuthTab === 'login'
+                    ? 'bg-purple-600 text-white hover:bg-purple-700'
+                    : boxed || activeAuthTab === undefined
+                      ? 'bg-transparent text-purple-700 hover:bg-purple-100'
+                      : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                ].join(' ')
+              }
+            >
+              Log in
+            </button>
+            <button
+              onClick={() => router.push('/auth/signup')}
+              className={
+                [
+                  'px-4 py-2 rounded font-semibold transition',
+                  activeAuthTab === 'signup'
+                    ? 'bg-purple-600 text-white hover:bg-purple-700'
+                    : boxed || activeAuthTab === undefined
+                      ? 'bg-transparent text-purple-700 hover:bg-purple-100'
+                      : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                ].join(' ')
+              }
+            >
+              Sign Up
+            </button>
+          </>
+        )}
       </div>
     </nav>
   )

@@ -1,8 +1,22 @@
+"use client"
+
 import Link from 'next/link'
 import { Heart } from 'lucide-react'
 import Navbar from "@/components/Navbar"
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 
 export default function LandingPage() {
+  const router = useRouter()
+
+  useEffect(() => {
+    // Redirect to /feed if authenticated
+    if (typeof window !== 'undefined' && localStorage.getItem("access_token")) {
+      router.push("/feed")
+      return
+    }
+  }, [])
+
   return (
     <>
       <Navbar />

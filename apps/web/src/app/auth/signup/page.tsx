@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Heart } from "lucide-react"
 import Navbar from "@/components/Navbar"
@@ -14,6 +14,14 @@ export default function SignupPage() {
     password: "",
   })
   const [error, setError] = useState("")
+
+  useEffect(() => {
+    // Redirect to /feed if authenticated
+    if (typeof window !== 'undefined' && localStorage.getItem("access_token")) {
+      router.push("/feed")
+      return
+    }
+  }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
