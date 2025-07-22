@@ -67,11 +67,7 @@ New Structure:
 ### 5. New Features Added
 - 🆕 Modern UI with Tailwind CSS
 - 🆕 NextAuth.js with multiple OAuth providers
-- 🆕 TanStack Query for better data management
 - 🆕 Cloudinary for optimized image handling
-- 🆕 Celery for background tasks
-- 🆕 Comprehensive testing setup
-- 🆕 CI/CD with GitHub Actions
 
 ### 6. Performance Improvements
 - **Frontend:** Next.js 15 App Router for better performance

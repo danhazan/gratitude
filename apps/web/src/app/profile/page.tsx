@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Heart, Edit, Camera, Settings, Calendar, MapPin, Users, MessageCircle } from "lucide-react"
 import Navbar from "@/components/Navbar"
@@ -23,7 +22,6 @@ interface UserProfile {
 }
 
 export default function ProfilePage() {
-  const { data: session, status } = useSession()
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const [profile, setProfile] = useState<UserProfile | null>(null)
@@ -46,11 +44,10 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!session?.user?.id) return
       setLoading(true)
       setError(null)
       try {
-        const res = await fetch(`/api/users/profile?userId=${session.user.id}`)
+        const res = await fetch(`/api/users/profile`)
         if (res.ok) {
           const data = await res.json()
           setProfile(data.user)
@@ -76,10 +73,10 @@ export default function ProfilePage() {
         setLoading(false)
       }
     }
-    if (status === "authenticated") fetchProfile()
-  }, [session?.user?.id, status])
+    fetchProfile()
+  }, [])
 
-  if (status === "loading" || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -88,11 +85,6 @@ export default function ProfilePage() {
         </div>
       </div>
     )
-  }
-
-  if (status === "unauthenticated") {
-    router.push("/auth/login")
-    return null
   }
 
   if (!profile) {

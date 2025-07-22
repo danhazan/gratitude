@@ -12,7 +12,7 @@ class UserBase(BaseModel):
 
 # Create User Schema
 class UserCreate(UserBase):
-    pass
+    password: str
 
 # Update User Schema
 class UserUpdate(BaseModel):

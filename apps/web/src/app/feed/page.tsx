@@ -1,9 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useSession, signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { Heart, MessageCircle, Share, Plus, Camera, MapPin, Calendar, LogOut } from "lucide-react"
+import { Heart, MessageCircle, Share, Plus, Camera, MapPin, Calendar } from "lucide-react"
 import Navbar from "@/components/Navbar"
 
 interface Post {
@@ -23,12 +22,10 @@ interface Post {
 }
 
 export default function FeedPage() {
-  const { data: session, status } = useSession()
   const router = useRouter()
   const [showCreatePost, setShowCreatePost] = useState(false)
   const [posts, setPosts] = useState<Post[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [newPost, setNewPost] = useState({
     content: "",
     postType: "daily" as const,
@@ -43,27 +40,7 @@ export default function FeedPage() {
         const response = await fetch('/api/posts')
         if (response.ok) {
           const data = await response.json()
-          // Add hearts data to posts
-          const postsWithHearts = await Promise.all(
-            data.posts.map(async (post: Post) => {
-              try {
-                const heartsResponse = await fetch(`/api/posts/${post.id}/hearts`)
-                if (heartsResponse.ok) {
-                  const heartsData = await heartsResponse.json()
-                  return {
-                    ...post,
-                    heartsCount: heartsData.heartsCount,
-                    isHearted: heartsData.hearts.some((heart: any) => heart.user.id === session?.user?.id)
-                  }
-                }
-                return { ...post, heartsCount: 0, isHearted: false }
-              } catch (error) {
-                console.error('Failed to fetch hearts for post:', post.id, error)
-                return { ...post, heartsCount: 0, isHearted: false }
-              }
-            })
-          )
-          setPosts(postsWithHearts)
+          setPosts(data.posts)
         }
       } catch (error) {
         console.error('Failed to fetch posts:', error)
@@ -71,13 +48,10 @@ export default function FeedPage() {
         setIsLoading(false)
       }
     }
-
-    if (status === 'authenticated') {
       fetchPosts()
-    }
-  }, [status, session?.user?.id])
+  }, [])
 
-  if (status === "loading" || isLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -88,13 +62,8 @@ export default function FeedPage() {
     )
   }
 
-  if (status === "unauthenticated") {
-    router.push("/auth/login")
-    return null
-  }
-
   const handleCreatePost = async () => {
-    if (!newPost.content.trim() || !session?.user?.id) return
+    if (!newPost.content.trim()) return
 
     try {
       const response = await fetch('/api/posts', {
@@ -105,7 +74,7 @@ export default function FeedPage() {
         body: JSON.stringify({
           content: newPost.content,
           postType: newPost.postType,
-          authorId: session.user.id,
+          authorId: "local_user_id", // Placeholder for now, replace with actual user ID
         }),
       })
 
@@ -129,8 +98,6 @@ export default function FeedPage() {
   }
 
   const handleHeart = async (postId: string, isCurrentlyHearted: boolean) => {
-    if (!session?.user?.id) return
-
     try {
       const method = isCurrentlyHearted ? 'DELETE' : 'POST'
       const response = await fetch(`/api/posts/${postId}/hearts`, {
@@ -139,7 +106,7 @@ export default function FeedPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: session.user.id
+          userId: "local_user_id" // Placeholder for now, replace with actual user ID
         }),
       })
 
@@ -160,19 +127,6 @@ export default function FeedPage() {
       }
     } catch (error) {
       console.error('Error hearting/unhearting post:', error)
-    }
-  }
-
-  const handleLogout = async () => {
-    setIsLoggingOut(true)
-    try {
-      await signOut({ 
-        callbackUrl: '/auth/login',
-        redirect: true 
-      })
-    } catch (error) {
-      console.error('Logout error:', error)
-      setIsLoggingOut(false)
     }
   }
 

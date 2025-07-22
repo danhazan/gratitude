@@ -7,8 +7,20 @@ from app.models.user import User
 from app.models.post import Post
 from app.models.interaction import Follow, Like
 from app.schemas.user import UserCreate, UserUpdate
+from passlib.context import CryptContext
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
+    async def create(self, db: AsyncSession, *, obj_in: UserCreate) -> User:
+        obj_in_data = obj_in.dict()
+        password = obj_in_data.pop("password")
+        hashed_password = pwd_context.hash(password)
+        db_obj = self.model(**obj_in_data, hashed_password=hashed_password)
+        db.add(db_obj)
+        await db.commit()
+        await db.refresh(db_obj)
+        return db_obj
+
     async def get_by_email(self, db: AsyncSession, *, email: str) -> Optional[User]:
         """Get user by email."""
         result = await db.execute(select(User).where(User.email == email))

@@ -1,68 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
-import { PrismaClient } from "@prisma/client"
 
-// Use singleton pattern for Prisma client
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined
-}
-
-const prisma = globalForPrisma.prisma ?? new PrismaClient()
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
-
-export async function GET(request: NextRequest) {
-  try {
-    let userId: string | null = null
-    try {
-      // Try to get userId from URL (real request)
-      const { searchParams } = new URL(request.url)
-      userId = searchParams.get('userId')
-    } catch {
-      // Fallback for test mocks
-      userId = (request as any).query?.userId || null
-    }
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: "User ID is required" },
-        { status: 400 }
-      )
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        image: true,
-        createdAt: true,
-        updatedAt: true,
-        location: true,
-        about: true,
-        birthday: true,
-        gender: true,
-        website: true,
-        interests: true,
-        occupation: true
-      }
-    })
-
-    if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      )
-    }
-
-    return NextResponse.json({ user })
-  } catch (error) {
-    console.error("Profile retrieval error:", error)
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    )
-  }
+export async function GET() {
+  return new Response(JSON.stringify({ error: 'Not implemented. Use backend API.' }), { status: 501 })
 }
 
 export async function PUT(request: NextRequest) {
@@ -129,67 +68,67 @@ export async function PUT(request: NextRequest) {
     }
 
     // Check if user exists
-    const existingUser = await prisma.user.findUnique({
-      where: { id: userId }
-    })
+    // const existingUser = await prisma.user.findUnique({
+    //   where: { id: userId }
+    // })
 
-    if (!existingUser) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      )
-    }
+    // if (!existingUser) {
+    //   return NextResponse.json(
+    //     { error: "User not found" },
+    //     { status: 404 }
+    //   )
+    // }
 
     // Check if email is already taken by another user
-    if (email && email !== existingUser.email) {
-      const emailExists = await prisma.user.findUnique({
-        where: { email }
-      })
+    // if (email && email !== existingUser.email) {
+    //   const emailExists = await prisma.user.findUnique({
+    //     where: { email }
+    //   })
 
-      if (emailExists) {
-        return NextResponse.json(
-          { error: "Email is already taken" },
-          { status: 409 }
-        )
-      }
-    }
+    //   if (emailExists) {
+    //     return NextResponse.json(
+    //       { error: "Email is already taken" },
+    //       { status: 409 }
+    //     )
+    //   }
+    // }
 
     // Update user profile
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        ...(name && { name }),
-        ...(email && { email }),
-        ...(image && { image }),
-        ...(location && { location }),
-        ...(about && { about }),
-        ...(birthday && { birthday: new Date(birthday) }),
-        ...(gender && { gender }),
-        ...(website && { website }),
-        ...(Array.isArray(interests) && { interests }),
-        ...(occupation && { occupation }),
-        updatedAt: new Date()
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        image: true,
-        createdAt: true,
-        updatedAt: true,
-        location: true,
-        about: true,
-        birthday: true,
-        gender: true,
-        website: true,
-        interests: true,
-        occupation: true
-      }
-    })
+    // const updatedUser = await prisma.user.update({
+    //   where: { id: userId },
+    //   data: {
+    //     ...(name && { name }),
+    //     ...(email && { email }),
+    //     ...(image && { image }),
+    //     ...(location && { location }),
+    //     ...(about && { about }),
+    //     ...(birthday && { birthday: new Date(birthday) }),
+    //     ...(gender && { gender }),
+    //     ...(website && { website }),
+    //     ...(Array.isArray(interests) && { interests }),
+    //     ...(occupation && { occupation }),
+    //     updatedAt: new Date()
+    //   },
+    //   select: {
+    //     id: true,
+    //     name: true,
+    //     email: true,
+    //     image: true,
+    //     createdAt: true,
+    //     updatedAt: true,
+    //     location: true,
+    //     about: true,
+    //     birthday: true,
+    //     gender: true,
+    //     website: true,
+    //     interests: true,
+    //     occupation: true
+    //   }
+    // })
 
     return NextResponse.json({
       message: "Profile updated successfully",
-      user: updatedUser
+      // user: updatedUser
     })
   } catch (error) {
     console.error("Profile update error:", error)

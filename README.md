@@ -17,8 +17,6 @@ A beautiful, modern social platform for sharing gratitude and building positive 
 - **Next.js 15** - React framework with App Router
 - **TypeScript** - Type-safe development
 - **Tailwind CSS** - Utility-first styling
-- **TanStack Query** - Server state management
-- **React Hook Form + Zod** - Form handling and validation
 - **NextAuth.js** - Authentication
 - **Lucide React** - Beautiful icons
 
@@ -27,12 +25,10 @@ A beautiful, modern social platform for sharing gratitude and building positive 
 - **PostgreSQL** - Primary database
 - **Redis** - Caching and sessions
 - **Alembic** - Database migrations
-- **Celery** - Background tasks
 - **Cloudinary** - Image uploads
 
 ### Infrastructure
 - **Docker** - Containerization
-- **GitHub Actions** - CI/CD
 - **Vercel** - Frontend deployment
 - **Railway** - Backend deployment
 
