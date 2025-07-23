@@ -43,30 +43,34 @@ export default function ProfilePage() {
   const [success, setSuccess] = useState<string | null>(null)
 
   useEffect(() => {
-    // Redirect to landing if not authenticated
-    if (typeof window !== 'undefined' && !localStorage.getItem("access_token")) {
-      router.push("/")
-      return
-    }
     const fetchProfile = async () => {
+      const token = localStorage.getItem("access_token")
+      if (!token) {
+        router.push("/auth/login")
+        return
+      }
       setLoading(true)
       setError(null)
       try {
-        const res = await fetch(`/api/users/profile`)
+        const res = await fetch(`/api/users/profile`, {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        })
         if (res.ok) {
           const data = await res.json()
-          setProfile(data.user)
+          setProfile(data)
           setEditForm({
-            name: data.user.name || "",
-            email: data.user.email || "",
-            image: data.user.image || "",
-            location: data.user.location || "",
-            about: data.user.about || "",
-            birthday: data.user.birthday ? data.user.birthday.slice(0, 10) : "",
-            gender: data.user.gender || "prefer_not_to_say",
-            website: data.user.website || "",
-            interests: (data.user.interests || []).join(", "),
-            occupation: data.user.occupation || ""
+            name: data.name || "",
+            email: data.email || "",
+            image: data.image || "",
+            location: data.location || "",
+            about: data.bio || "",
+            birthday: data.birthday ? data.birthday.slice(0, 10) : "",
+            gender: data.gender || "prefer_not_to_say",
+            website: data.website || "",
+            interests: (data.interests || []).join(", "),
+            occupation: data.occupation || ""
           })
         } else {
           const data = await res.json()
@@ -79,7 +83,7 @@ export default function ProfilePage() {
       }
     }
     fetchProfile()
-  }, [])
+  }, [router])
 
   if (loading) {
     return (
@@ -131,26 +135,28 @@ export default function ProfilePage() {
     setError(null)
     setSuccess(null)
     try {
+      const token = localStorage.getItem("access_token")
+      if (!token) {
+        setError("User not authenticated.")
+        setSaving(false)
+        return
+      }
       const res = await fetch("/api/users/profile", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({
-          userId: profile.id,
-          name: editForm.name,
-          email: editForm.email,
-          image: editForm.image,
-          location: editForm.location,
-          about: editForm.about,
-          birthday: editForm.birthday,
-          gender: editForm.gender,
-          website: editForm.website,
-          interests: editForm.interests.split(",").map((s: string) => s.trim()).filter(Boolean),
-          occupation: editForm.occupation
+          username: editForm.name, // or use a separate username field if you have one
+          full_name: editForm.name, // or use a separate full name field if you have one
+          bio: editForm.about,
+          avatar_url: editForm.image
         })
       })
       const data = await res.json()
       if (res.ok) {
-        setProfile(data.user)
+        setProfile(data)
         setIsEditing(false)
         setSuccess("Profile updated successfully!")
       } else {
@@ -158,7 +164,6 @@ export default function ProfilePage() {
       }
     } catch (e) {
       setError("Failed to update profile")
-    } finally {
       setSaving(false)
     }
   }

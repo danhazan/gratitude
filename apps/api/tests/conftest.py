@@ -108,8 +108,13 @@ async def test_client(db_session):
 async def test_user(db_session):
     """Create a test user."""
     from app.models.user import User
+    from passlib.context import CryptContext
     import uuid
-    
+
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    password = "testpassword"
+    hashed_password = pwd_context.hash(password)
+
     user = User(
         id=str(uuid.uuid4()),
         email=f"test-{uuid.uuid4()}@example.com",
@@ -117,21 +122,27 @@ async def test_user(db_session):
         full_name="Test User",
         bio="A test user for testing",
         is_verified=True,
-        is_active=True
+        is_active=True,
+        hashed_password=hashed_password
     )
-    
+
     db_session.add(user)
     await db_session.commit()
     await db_session.refresh(user)
-    
+
     return user
 
 @pytest_asyncio.fixture
 async def test_user2(db_session):
     """Create a second test user."""
     from app.models.user import User
+    from passlib.context import CryptContext
     import uuid
-    
+
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    password = "testpassword"
+    hashed_password = pwd_context.hash(password)
+
     user = User(
         id=str(uuid.uuid4()),
         email=f"test2-{uuid.uuid4()}@example.com",
@@ -139,13 +150,14 @@ async def test_user2(db_session):
         full_name="Test User 2",
         bio="A second test user for testing",
         is_verified=True,
-        is_active=True
+        is_active=True,
+        hashed_password=hashed_password
     )
-    
+
     db_session.add(user)
     await db_session.commit()
     await db_session.refresh(user)
-    
+
     return user
 
 @pytest_asyncio.fixture

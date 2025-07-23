@@ -36,8 +36,9 @@ export default function SignupPage() {
       if (response.ok) {
         router.push("/auth/login")
       } else {
-        const data = await response.json()
-        setError(data.error || "Signup failed")
+        const data = await response.json().catch(async () => ({ raw: await response.text() }))
+        console.error("Signup error response:", data, "Status:", response.status)
+        setError(data.error || JSON.stringify(data) || "Signup failed")
       }
     } catch (err) {
       setError("Signup failed")

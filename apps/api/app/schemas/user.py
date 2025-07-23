@@ -9,6 +9,12 @@ class UserBase(BaseModel):
     full_name: Optional[str] = None
     bio: Optional[str] = None
     avatar_url: Optional[str] = None
+    location: Optional[str] = None
+    birthday: Optional[str] = None
+    gender: Optional[str] = None
+    website: Optional[str] = None
+    interests: Optional[str] = None
+    occupation: Optional[str] = None
 
 # Create User Schema
 class UserCreate(UserBase):
@@ -20,6 +26,12 @@ class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     bio: Optional[str] = None
     avatar_url: Optional[str] = None
+    location: Optional[str] = None
+    birthday: Optional[str] = None
+    gender: Optional[str] = None
+    website: Optional[str] = None
+    interests: Optional[str] = None
+    occupation: Optional[str] = None
 
 # User Response Schema
 class UserResponse(UserBase):

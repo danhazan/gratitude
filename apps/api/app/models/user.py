@@ -18,6 +18,12 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     hashed_password = Column(String, nullable=False)
+    location = Column(String, nullable=True)
+    birthday = Column(String, nullable=True)
+    gender = Column(String, nullable=True)
+    website = Column(String, nullable=True)
+    interests = Column(String, nullable=True)  # Comma-separated
+    occupation = Column(String, nullable=True)
 
     # Relationships
     posts = relationship("Post", back_populates="author", cascade="all, delete-orphan")

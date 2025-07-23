@@ -1,5 +1,5 @@
 import pytest
-pytest.skip("Disabled due to known issues. See TEST_STATUS.md for details.", allow_module_level=True)
+# pytest.skip("Disabled due to known issues. See TEST_STATUS.md for details.", allow_module_level=True)
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import User

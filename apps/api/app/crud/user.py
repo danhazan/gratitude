@@ -21,6 +21,15 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         await db.refresh(db_obj)
         return db_obj
 
+    async def update(self, db: AsyncSession, *, db_obj: User, obj_in: UserUpdate) -> User:
+        obj_data = db_obj.__dict__
+        update_data = obj_in.dict(exclude_unset=True)
+        for field in update_data:
+            setattr(db_obj, field, update_data[field])
+        await db.commit()
+        await db.refresh(db_obj)
+        return db_obj
+
     async def get_by_email(self, db: AsyncSession, *, email: str) -> Optional[User]:
         """Get user by email."""
         result = await db.execute(select(User).where(User.email == email))
