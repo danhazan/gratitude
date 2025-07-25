@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   if (!authHeader) {
     return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401 })
   }
-  const res = await fetch(`${backendUrl}/users/me`, {
+  const res = await fetch(`${backendUrl}/api/v1/auth/session`, {
     method: "GET",
     headers: {
       "Authorization": authHeader,
@@ -24,7 +24,7 @@ export async function PUT(request: NextRequest) {
     return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401 })
   }
   const body = await request.text()
-  const res = await fetch(`${backendUrl}/users/me`, {
+  const res = await fetch(`${backendUrl}/api/v1/auth/session`, {
     method: "PUT",
     headers: {
       "Authorization": authHeader,

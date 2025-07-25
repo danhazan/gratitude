@@ -15,8 +15,8 @@ async def create_test_database():
         # Create all tables
         await conn.run_sync(Base.metadata.create_all)
         
-        # Verify tables were created
-        result = await conn.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))
+        # Verify tables were created (PostgreSQL version)
+        result = await conn.execute(text("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"))
         tables = result.fetchall()
         print(f"Created tables: {[table[0] for table in tables]}")
     

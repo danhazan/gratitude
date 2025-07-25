@@ -1,7 +1,6 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.api.deps import get_current_active_user, get_optional_current_user
 from app.core.database import get_db
 from app.crud.post import post
 from app.crud.interaction import like, comment
@@ -13,7 +12,6 @@ router = APIRouter()
 @router.post("/", response_model=PostResponse, status_code=status.HTTP_201_CREATED)
 async def create_post(
     post_in: PostCreate,
-    current_user: dict = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Create a new post."""
@@ -23,12 +21,11 @@ async def create_post(
     # Create post object directly with author_id
     post_obj = Post(
         id=str(uuid.uuid4()),
-        author_id=current_user.id,
+        author_id=None, # Placeholder for now, will be updated with actual user ID
         content=post_in.content,
         post_type=post_in.post_type,
         title=post_in.title,
         image_url=post_in.image_url,
-        location=post_in.location,
         is_public=post_in.is_public
     )
     
@@ -42,11 +39,10 @@ async def create_post(
 async def get_user_feed(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
-    current_user: dict = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Get user's personalized feed."""
-    return await post.get_user_feed(db, user_id=current_user.id, skip=skip, limit=limit)
+    return await post.get_user_feed(db, user_id=None, skip=skip, limit=limit) # Placeholder for user_id
 
 @router.get("/", response_model=List[PostList])
 async def get_posts(
@@ -67,11 +63,10 @@ async def get_posts(
 @router.get("/{post_id}", response_model=PostList)
 async def get_post(
     post_id: str,
-    current_user: Optional[dict] = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Get a specific post by ID."""
-    current_user_id = current_user.id if current_user else None
+    current_user_id = None # Placeholder for now
     db_post = await post.get_with_author(db, post_id=post_id, current_user_id=current_user_id)
     if not db_post:
         raise HTTPException(
@@ -84,7 +79,6 @@ async def get_post(
 async def update_post(
     post_id: str,
     post_in: PostUpdate,
-    current_user: dict = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Update a post."""
@@ -95,7 +89,7 @@ async def update_post(
             detail="Post not found"
         )
     
-    if db_post.author_id != current_user.id:
+    if db_post.author_id != None: # Placeholder for now
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions"
@@ -106,7 +100,6 @@ async def update_post(
 @router.delete("/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_post(
     post_id: str,
-    current_user: dict = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Delete a post."""
@@ -117,7 +110,7 @@ async def delete_post(
             detail="Post not found"
         )
     
-    if db_post.author_id != current_user.id:
+    if db_post.author_id != None: # Placeholder for now
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions"
@@ -128,7 +121,6 @@ async def delete_post(
 @router.post("/{post_id}/like", status_code=status.HTTP_201_CREATED)
 async def like_post(
     post_id: str,
-    current_user: dict = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Like a post."""
@@ -140,7 +132,7 @@ async def like_post(
             detail="Post not found"
         )
     
-    result = await like.create_like(db, user_id=current_user.id, post_id=post_id)
+    result = await like.create_like(db, user_id=None, post_id=post_id) # Placeholder for user_id
     if result is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -152,7 +144,6 @@ async def like_post(
 @router.delete("/{post_id}/like", status_code=status.HTTP_204_NO_CONTENT)
 async def unlike_post(
     post_id: str,
-    current_user: dict = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Unlike a post."""
@@ -164,7 +155,7 @@ async def unlike_post(
             detail="Post not found"
         )
     
-    success = await like.remove_like(db, user_id=current_user.id, post_id=post_id)
+    success = await like.remove_like(db, user_id=None, post_id=post_id) # Placeholder for user_id
     if not success:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -175,7 +166,6 @@ async def unlike_post(
 async def create_comment(
     post_id: str,
     comment_in: CommentCreate,
-    current_user: dict = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Create a comment on a post."""
@@ -189,7 +179,7 @@ async def create_comment(
     
     return await comment.create_comment(
         db, 
-        author_id=current_user.id, 
+        author_id=None, # Placeholder for now
         post_id=post_id, 
         content=comment_in.content,
         parent_id=comment_in.parent_id

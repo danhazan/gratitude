@@ -3,7 +3,6 @@ from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
-from app.crud.user import user
 import jwt
 import os
 
@@ -46,14 +45,8 @@ async def get_current_user(
         )
     
     # Get user from database
-    db_user = await user.get(db, id=user_id)
-    if db_user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-    
-    return db_user
+    # db_user = await user.get(db, id=user_id)
+    raise HTTPException(status_code=501, detail="User lookup not implemented")
 
 async def get_current_active_user(
     current_user: dict = Depends(get_current_user),
@@ -84,7 +77,4 @@ async def get_optional_current_user(
         if user_id is None:
             return None
     except jwt.PyJWTError:
-        return None
-    
-    db_user = await user.get(db, id=user_id)
-    return db_user if db_user and db_user.is_active else None 
+        return None  # User lookup not implemented 

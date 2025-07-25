@@ -37,7 +37,6 @@ class CommentResponse(CommentBase):
         from_attributes = True
 
 class CommentWithAuthor(CommentResponse):
-    author: "UserList"
     replies_count: int = 0
 
 # Follow Schemas
@@ -51,8 +50,4 @@ class FollowResponse(BaseModel):
     created_at: datetime
 
     class Config:
-        from_attributes = True
-
-# Import here to avoid circular imports
-from .user import UserList
-CommentWithAuthor.model_rebuild() 
+        from_attributes = True 

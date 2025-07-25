@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Text, ForeignKey, JSON
+from sqlalchemy import Column, String, DateTime, Text, ForeignKey, JSON, Integer
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 import datetime
@@ -8,7 +8,7 @@ class Notification(Base):
     __tablename__ = "notification"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     type = Column(String, nullable=False)
     priority = Column(String, nullable=False, default="normal")
     title = Column(String, nullable=False)

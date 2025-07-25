@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
-from app.crud.user import user as user_crud
-from app.schemas.user import UserResponse
 from pydantic import BaseModel
 from passlib.context import CryptContext
 import jwt
 import os
 from datetime import datetime, timedelta
+from app.schemas.user import UserCreate, UserOut
+from app.crud.user import create_user, get_user_by_email, get_user_by_username
 
 router = APIRouter()
 
@@ -27,8 +27,8 @@ class TokenResponse(BaseModel):
 
 @router.post("/login", response_model=TokenResponse)
 async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
-    db_user = await user_crud.get_by_email(db, email=data.email)
-    if not db_user or not db_user.is_active:
+    db_user = await get_user_by_email(db, data.email)
+    if not db_user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     if not pwd_context.verify(data.password, db_user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -36,7 +36,7 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
     token = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return {"access_token": token, "token_type": "bearer"}
 
-@router.get("/session", response_model=UserResponse)
+@router.get("/session")
 async def get_session(request: Request, db: AsyncSession = Depends(get_db)):
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
@@ -49,12 +49,21 @@ async def get_session(request: Request, db: AsyncSession = Depends(get_db)):
             raise HTTPException(status_code=401, detail="Invalid token")
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
-    db_user = await user_crud.get(db, id=user_id)
+    raise HTTPException(status_code=501, detail="User lookup not implemented")
     if not db_user or not db_user.is_active:
         raise HTTPException(status_code=401, detail="User not found or inactive")
-    return db_user
+    return {"id": db_user.id, "email": db_user.email, "username": db_user.username}
 
 # Logout is a no-op for JWT, but endpoint provided for completeness
 @router.post("/logout")
 async def logout():
-    return {"message": "Logged out (client should delete token)"} 
+    return {"message": "Logged out (client should delete token)"}
+
+@router.post("/signup", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+async def signup(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
+    if await get_user_by_email(db, user_in.email):
+        raise HTTPException(status_code=400, detail="Email already registered")
+    if await get_user_by_username(db, user_in.username):
+        raise HTTPException(status_code=400, detail="Username already taken")
+    user = await create_user(db, user_in)
+    return user 

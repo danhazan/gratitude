@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Text, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, String, DateTime, Text, ForeignKey, UniqueConstraint, Integer
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -8,7 +8,7 @@ class Like(Base):
     __tablename__ = "likes"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     post_id = Column(String, ForeignKey("posts.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -26,7 +26,7 @@ class Comment(Base):
     __tablename__ = "comments"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    author_id = Column(String, ForeignKey("users.id"), nullable=False)
+    author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     post_id = Column(String, ForeignKey("posts.id"), nullable=False)
     parent_id = Column(String, ForeignKey("comments.id"), nullable=True)  # For nested comments
     content = Column(Text, nullable=False)
@@ -46,8 +46,8 @@ class Follow(Base):
     __tablename__ = "follows"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    follower_id = Column(String, ForeignKey("users.id"), nullable=False)
-    followed_id = Column(String, ForeignKey("users.id"), nullable=False)
+    follower_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    followed_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships

@@ -11,7 +11,7 @@ export async function POST(request: Request) {
   if (!body.email || !body.password || !body.username) {
     return new Response(JSON.stringify({ error: 'Email, username, and password are required' }), { status: 400 })
   }
-  const res = await fetch(backendUrl + '/api/v1/users/', {
+  const res = await fetch(backendUrl + '/api/v1/auth/signup', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email: body.email, username: body.username, password: body.password }),

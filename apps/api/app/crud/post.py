@@ -4,7 +4,6 @@ from sqlalchemy import select, func, desc
 from sqlalchemy.orm import selectinload
 from app.crud.base import CRUDBase
 from app.models.post import Post, PostType
-from app.models.user import User
 from app.models.interaction import Like, Comment, Follow
 from app.schemas.post import PostCreate, PostUpdate
 
@@ -93,9 +92,9 @@ class CRUDPost(CRUDBase[Post, PostCreate, PostUpdate]):
             .where(
                 (Post.author_id == user_id) |
                 (Post.author_id.in_(
-                    select(User.id)
-                    .join(Follow, User.id == Follow.followed_id)
-                    .where(Follow.follower_id == user_id)
+                    select(Follow.followed_id)
+                    .join(Follow, Follow.follower_id == user_id)
+                    .where(Follow.followed_id == Follow.followed_id)
                 ))
             )
             .where(Post.is_public == True)

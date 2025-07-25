@@ -148,3 +148,21 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Built with love for the gratitude community
 - Inspired by the need for positive social media
 - Powered by modern web technologies 
+
+## Local Development Database Credentials
+
+- **User:** grateful
+- **Password:** iamgreatful
+- **Database:** grateful
+- **Host:** localhost
+- **Port:** 5432 
+
+## Database Connection (Local Development)
+
+- **Postgres URL:**
+  postgresql+psycopg2://postgres:iamgreatful@localhost:5432/grateful
+- **Username:** postgres
+- **Password:** iamgreatful
+- **Database:** grateful
+
+You can find this in `apps/api/.env`. The password is also used in the backend and should be kept in sync. 

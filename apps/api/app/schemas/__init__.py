@@ -4,7 +4,7 @@ from .interaction import *
 from .notification import *
 
 __all__ = [
-    "UserBase", "UserCreate", "UserUpdate", "UserResponse", "UserProfile", "UserList",
+    "UserCreate",
     "PostBase", "PostCreate", "PostUpdate", "PostResponse", "PostWithAuthor", "PostList", "PostType",
     "LikeCreate", "LikeResponse",
     "CommentBase", "CommentCreate", "CommentUpdate", "CommentResponse", "CommentWithAuthor",
