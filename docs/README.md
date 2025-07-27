@@ -1,73 +1,62 @@
 # Grateful Project Documentation
 
-This directory contains all project documentation organized by purpose and audience.
+Welcome to the Grateful project documentation. This directory contains comprehensive documentation for all aspects of the project.
 
-## 📚 Documentation Overview
+## 📚 Documentation Index
 
-### Core Documents
-- **[GRATEFUL_PRD.md](./GRATEFUL_PRD.md)** - Product Requirements Document
-  - Complete project specification and feature requirements
-  - Development phases and task breakdown
-  - Success metrics and KPIs
-  - **Primary reference for all project decisions**
+### 🏗️ Architecture & Setup
+- **[Architecture and Setup Guide](ARCHITECTURE_AND_SETUP.md)** - Technical setup guide and project structure
+- **[Configuration Files](CONFIGURATION_FILES.md)** - Environment variables and configuration management
 
-- **[ARCHITECTURE_AND_SETUP.md](./ARCHITECTURE_AND_SETUP.md)** - Technical Architecture & Setup Guide
-  - Project structure and technology stack
-  - Development environment setup
-  - Database configuration
-  - **Essential for new developers**
+### 🗄️ Database & Data
+- **[Database Structure](DATABASE_STRUCTURE.md)** - Complete database documentation and relationships
+- **[Backend API Documentation](../api/BACKEND_API_DOCUMENTATION.md)** - FastAPI backend setup and usage
 
-### Technical Reference
-- **[DATABASE_STRUCTURE.md](./DATABASE_STRUCTURE.md)** - Database Schema Documentation
-  - Complete database schema and relationships
-  - Table structures and constraints
-  - **Essential for database operations and development**
+### 🧪 Testing & Quality
+- **[Test Status](TEST_STATUS.md)** - Test implementation progress and roadmap
+- **[Test Guidelines](TEST_GUIDELINES.md)** - Comprehensive testing guidelines and best practices
 
-- **[CONFIGURATION_FILES.md](./CONFIGURATION_FILES.md)** - Configuration Files Documentation
-  - Complete overview of all configuration files
-  - Environment variables and setup instructions
-  - **Essential for project setup and maintenance**
+### 🛠️ Development & Operations
+- **[Useful Commands](USEFUL_COMMANDS.md)** - All development commands and database operations
+- **[Project Requirements](GRATEFUL_PRD.md)** - Complete feature specifications and development phases
 
-- **[TEST_STATUS.md](./TEST_STATUS.md)** - Test Implementation Status
-  - Current test status and progress tracking
-  - Implementation roadmap and known issues
-  - **For developers working on testing**
+### 📋 Project Management
+- **[Known Issues](KNOWN_ISSUES.md)** - Troubleshooting guide and common solutions
 
-- **[KNOWN_ISSUES.md](./KNOWN_ISSUES.md)** - Troubleshooting Guide
-  - Common issues and their solutions
-  - Development environment fixes
-  - **Reference when encountering problems**
+## 🚀 Quick Start
 
-- **[NOTIFICATION_FEATURES.md](./NOTIFICATION_FEATURES.md)** - Notification System Specification
-  - Detailed technical specification for notifications
-  - API endpoints and data models
-  - **For developers working on notification features**
+### For Developers
+1. Start with **[Architecture and Setup Guide](ARCHITECTURE_AND_SETUP.md)**
+2. Review **[Database Structure](DATABASE_STRUCTURE.md)** for data models
+3. Check **[Test Guidelines](TEST_GUIDELINES.md)** for testing practices
+4. Use **[Useful Commands](USEFUL_COMMANDS.md)** for development workflow
 
-### Quick Reference
-- **[USEFUL_COMMANDS.md](./USEFUL_COMMANDS.md)** - Database Commands
-  - PostgreSQL setup and maintenance commands
-  - **Quick reference for database operations**
+### For Testers
+1. Review **[Test Status](TEST_STATUS.md)** for current test coverage
+2. Follow **[Test Guidelines](TEST_GUIDELINES.md)** for writing tests
+3. Check **[Known Issues](KNOWN_ISSUES.md)** for common problems
 
-## 🎯 Documentation Guidelines
+### For DevOps
+1. Review **[Configuration Files](CONFIGURATION_FILES.md)** for deployment setup
+2. Check **[Useful Commands](USEFUL_COMMANDS.md)** for deployment commands
+3. Review **[Architecture and Setup Guide](ARCHITECTURE_AND_SETUP.md)** for infrastructure
 
-### For Contributors
-1. **Start with PRD** - Understand the project goals and requirements
-2. **Follow Architecture Guide** - Set up your development environment
-3. **Check Known Issues** - If you encounter problems
-4. **Reference Technical Specs** - When working on specific features
+## 📝 Documentation Standards
 
-### For Documentation Updates
-- Keep the PRD as the single source of truth for requirements
-- Update known issues as they are resolved
-- Add new technical specifications as features are developed
-- Maintain cross-references between documents
+### File Organization
+- **Architecture**: High-level system design and setup
+- **Database**: Data models, relationships, and migrations
+- **Testing**: Test strategies, guidelines, and status
+- **Development**: Commands, workflows, and troubleshooting
+- **Requirements**: Feature specifications and project phases
 
-## 📋 Quick Links
+### Writing Guidelines
+- Use clear, concise language
+- Include code examples where helpful
+- Keep documentation up to date
+- Cross-reference related documents
+- Use consistent formatting and structure
 
-- **Getting Started**: [ARCHITECTURE_AND_SETUP.md](./ARCHITECTURE_AND_SETUP.md)
-- **Project Requirements**: [GRATEFUL_PRD.md](./GRATEFUL_PRD.md)
-- **Database Schema**: [DATABASE_STRUCTURE.md](./DATABASE_STRUCTURE.md)
-- **Configuration Files**: [CONFIGURATION_FILES.md](./CONFIGURATION_FILES.md)
-- **Test Status**: [TEST_STATUS.md](./TEST_STATUS.md)
-- **Troubleshooting**: [KNOWN_ISSUES.md](./KNOWN_ISSUES.md)
-- **Database Commands**: [USEFUL_COMMANDS.md](./USEFUL_COMMANDS.md) 
+---
+
+*Last updated: [Current Date]* 

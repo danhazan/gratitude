@@ -1,5 +1,86 @@
 # Test Status and Implementation Roadmap
 
+## Test Organization Guidelines
+
+### Test Structure Overview
+
+#### Backend Tests (`apps/api/tests/`)
+```
+tests/
+├── conftest.py              # Shared test fixtures and configuration
+├── unit/                    # Unit tests for individual components
+│   ├── test_database.py     # Database operations and setup
+│   └── test_posts.py        # Post API unit tests
+└── integration/             # Integration tests (currently disabled)
+    └── test_api_integration.py  # End-to-end API workflows
+```
+
+#### Frontend Tests (`apps/web/src/tests/`)
+```
+tests/
+├── setup.ts                 # Test configuration and setup
+├── unit/                    # Unit tests for components
+├── integration/             # Integration tests for pages
+└── e2e/                    # End-to-end tests (future)
+```
+
+### Test Categories and Best Practices
+
+#### Unit Tests
+- **Purpose**: Test individual functions, components, or API endpoints in isolation
+- **Location**: `apps/api/tests/unit/` and `apps/web/src/tests/unit/`
+- **Best Practices**:
+  - Mock external dependencies
+  - Use test fixtures for common data
+  - Test both success and error cases
+  - Keep tests focused and atomic
+
+#### Integration Tests
+- **Purpose**: Test how components work together
+- **Location**: `apps/api/tests/integration/` and `apps/web/src/tests/integration/`
+- **Best Practices**:
+  - Test complete workflows
+  - Use test databases
+  - Test API endpoints with real data
+  - Verify data persistence
+
+#### End-to-End Tests (Future)
+- **Purpose**: Test complete user workflows
+- **Location**: `apps/web/src/tests/e2e/`
+- **Best Practices**:
+  - Use Playwright or Cypress
+  - Test real user scenarios
+  - Include authentication flows
+  - Test responsive design
+
+### Test Naming Conventions
+
+#### Backend Tests
+- `test_*.py` - Individual test files
+- `test_*_*.py` - Test files for specific modules
+- Use descriptive names: `test_user_creation`, `test_post_validation`
+
+#### Frontend Tests
+- `*.test.ts` - Individual test files
+- `*.test.tsx` - Component test files
+- Use descriptive names: `UserProfile.test.tsx`, `PostCreation.test.ts`
+
+### Test Configuration
+
+#### Backend Test Setup
+- Uses `pytest` with `pytest-asyncio`
+- SQLite test database for fast execution
+- JWT token fixtures for authentication
+- Async test client for API testing
+
+#### Frontend Test Setup
+- Uses Jest with React Testing Library
+- Mock NextAuth for authentication
+- Mock API calls for isolated testing
+- Snapshot testing for UI components
+
+---
+
 ## Current Test Status - UPDATED ✅
 
 ### ✅ Unit Tests (ALL PASSING) - 86/86 Tests Passing (100%)
