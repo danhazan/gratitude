@@ -13,7 +13,6 @@ Welcome to the Grateful project documentation. This directory contains comprehen
 - **[Backend API Documentation](../api/BACKEND_API_DOCUMENTATION.md)** - FastAPI backend setup and usage
 
 ### 🧪 Testing & Quality
-- **[Test Status](TEST_STATUS.md)** - Test implementation progress and roadmap
 - **[Test Guidelines](TEST_GUIDELINES.md)** - Comprehensive testing guidelines and best practices
 
 ### 🛠️ Development & Operations
@@ -32,9 +31,8 @@ Welcome to the Grateful project documentation. This directory contains comprehen
 4. Use **[Useful Commands](USEFUL_COMMANDS.md)** for development workflow
 
 ### For Testers
-1. Review **[Test Status](TEST_STATUS.md)** for current test coverage
-2. Follow **[Test Guidelines](TEST_GUIDELINES.md)** for writing tests
-3. Check **[Known Issues](KNOWN_ISSUES.md)** for common problems
+1. Follow **[Test Guidelines](TEST_GUIDELINES.md)** for writing tests
+2. Check **[Known Issues](KNOWN_ISSUES.md)** for common problems
 
 ### For DevOps
 1. Review **[Configuration Files](CONFIGURATION_FILES.md)** for deployment setup
@@ -46,7 +44,7 @@ Welcome to the Grateful project documentation. This directory contains comprehen
 ### File Organization
 - **Architecture**: High-level system design and setup
 - **Database**: Data models, relationships, and migrations
-- **Testing**: Test strategies, guidelines, and status
+- **Testing**: Test strategies, guidelines, and best practices
 - **Development**: Commands, workflows, and troubleshooting
 - **Requirements**: Feature specifications and project phases
 

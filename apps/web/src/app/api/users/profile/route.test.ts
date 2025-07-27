@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals'
 import { createMocks } from 'node-mocks-http'
 import { GET, PUT } from './route'
 
