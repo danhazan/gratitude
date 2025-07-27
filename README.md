@@ -39,13 +39,19 @@ grateful/
 ├── apps/
 │   ├── web/                 # Next.js frontend
 │   └── api/                 # FastAPI backend
-├── packages/
-│   ├── database/            # Database schema & migrations
-│   ├── shared/              # Shared types & utilities
-│   └── ui/                  # Reusable UI components
 ├── infrastructure/          # Docker, deployment configs
-└── docs/                   # Documentation
+├── docs/                   # Documentation
+└── tools/                  # Developer scripts and utilities
 ```
+
+## 📚 Documentation Quick Links
+
+- **[📋 Project Requirements](docs/GRATEFUL_PRD.md)** - Complete feature specifications and development phases
+- **[🏗️ Architecture & Setup](docs/ARCHITECTURE_AND_SETUP.md)** - Technical setup guide and project structure
+- **[🗄️ Database Schema](docs/DATABASE_STRUCTURE.md)** - Complete database documentation and relationships
+- **[🧪 Test Status](docs/TEST_STATUS.md)** - Test implementation progress and roadmap
+- **[🛠️ Useful Commands](docs/USEFUL_COMMANDS.md)** - All development commands and database operations
+- **[⚠️ Known Issues](docs/KNOWN_ISSUES.md)** - Troubleshooting guide and common solutions
 
 ## 🚀 Getting Started
 
@@ -151,11 +157,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Local Development Database Credentials
 
-- **User:** grateful
-- **Password:** iamgreatful
-- **Database:** grateful
-- **Host:** localhost
-- **Port:** 5432 
+- **Postgres user:** grateful
+- **Postgres password:** iamgreatful
+- **Default database:** grateful
+
+---
 
 ## Database Connection (Local Development)
 

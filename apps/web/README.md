@@ -59,4 +59,5 @@ Test setup is configured in `src/tests/setup.ts`.
 
 For backend API usage, setup, and testing instructions, see:
 
-- [../api/BACKEND_API_DOCUMENTATION.md](../api/BACKEND_API_DOCUMENTATION.md)
+- [../../docs/DATABASE_STRUCTURE.md](../../docs/DATABASE_STRUCTURE.md) - Database schema and relationships
+- [../../docs/ARCHITECTURE_AND_SETUP.md](../../docs/ARCHITECTURE_AND_SETUP.md) - Backend setup and architecture
