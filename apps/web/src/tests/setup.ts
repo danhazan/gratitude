@@ -20,8 +20,15 @@ jest.mock('next/server', () => ({
     }
   },
   NextResponse: {
-    json: (data: any, init?: any) => new Response(JSON.stringify(data), init),
-    redirect: (url: string) => new Response(null, { status: 302, headers: { Location: url } }),
+    json: (data: any, init?: any) => ({
+      status: init?.status || 200,
+      json: () => Promise.resolve(data),
+      headers: init?.headers || {}
+    }),
+    redirect: (url: string) => ({
+      status: 302,
+      headers: { Location: url }
+    }),
   }
 }))
 

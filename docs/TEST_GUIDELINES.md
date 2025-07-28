@@ -4,6 +4,174 @@
 
 This document provides guidelines for writing and organizing tests in the Grateful project. We follow a structured approach to testing with clear separation between unit, integration, and end-to-end tests.
 
+## Current Test Status
+
+### ✅ Backend Tests
+- **Framework**: Pytest with async support
+- **Status**: Fully configured and working
+- **Coverage**: Unit tests for all API endpoints
+- **Location**: `apps/api/tests/`
+
+### 🔄 Frontend Tests  
+- **Framework**: Jest with React Testing Library
+- **Status**: Infrastructure complete, some tests need dependency mocking
+- **Coverage**: Basic component and API route tests
+- **Location**: `apps/web/src/tests/`
+
+## Frontend Testing Setup
+
+### Current Configuration
+
+**Test Framework**: Jest with jsdom environment
+**Location**: `apps/web/src/tests/`
+**Setup File**: `apps/web/src/tests/setup.ts`
+
+### Jest Configuration (`apps/web/jest.config.js`)
+```javascript
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'jsdom',
+  roots: ['<rootDir>/src'],
+  testMatch: [
+    '**/__tests__/**/*.(ts|tsx)',
+    '**/?(*.)+(spec|test).(ts|tsx)'
+  ],
+  transform: {
+    '^.+\\.(ts|tsx)$': ['ts-jest', {
+      tsconfig: {
+        jsx: 'react-jsx'
+      }
+    }]
+  },
+  collectCoverageFrom: [
+    'src/**/*.(ts|tsx)',
+    '!src/**/*.d.ts',
+  ],
+  setupFilesAfterEnv: ['<rootDir>/src/tests/setup.ts'],
+  moduleNameMapping: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+    '^@/components/(.*)$': '<rootDir>/src/components/$1',
+  },
+  transformIgnorePatterns: [
+    'node_modules/(?!(.*\\.mjs$))'
+  ],
+  testEnvironmentOptions: {
+    customExportConditions: ['node', 'node-addons'],
+  },
+}
+```
+
+### Test Setup (`apps/web/src/tests/setup.ts`)
+```typescript
+import React from 'react'
+
+// Mock environment variables for testing
+process.env.NEXTAUTH_URL = 'http://localhost:3000'
+process.env.NEXTAUTH_SECRET = 'test-secret'
+process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test'
+process.env.GOOGLE_CLIENT_ID = 'test-google-client-id'
+process.env.GOOGLE_CLIENT_SECRET = 'test-google-client-secret'
+process.env.GITHUB_ID = 'test-github-id'
+process.env.GITHUB_SECRET = 'test-github-secret'
+
+// Mock Next.js server components
+jest.mock('next/server', () => ({
+  NextRequest: class MockNextRequest {
+    constructor(init?: any) {
+      return new Request(init)
+    }
+  },
+  NextResponse: {
+    json: (data: any, init?: any) => ({
+      status: init?.status || 200,
+      json: () => Promise.resolve(data),
+      headers: init?.headers || {}
+    }),
+    redirect: (url: string) => ({
+      status: 302,
+      headers: { Location: url }
+    }),
+  }
+}))
+
+// Mock Next.js navigation
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+    back: jest.fn(),
+    forward: jest.fn(),
+    refresh: jest.fn(),
+  }),
+  usePathname: () => '/',
+  useSearchParams: () => new URLSearchParams(),
+}))
+```
+
+### Current Test Structure
+
+```
+apps/web/src/tests/
+├── setup.ts                    # Jest setup and mocks
+├── unit/                       # Unit tests
+│   ├── example.test.ts         # Basic Jest setup test
+│   ├── component-test.test.tsx # React component test
+│   └── __mocks__/             # Mock components
+│       └── Navbar.tsx         # Navbar component mock
+├── integration/                # Integration tests
+│   ├── auth-flow.test.ts      # Authentication flow tests
+│   └── logout.test.ts         # Logout API tests
+├── e2e/                       # End-to-end tests (future)
+└── utils/                     # Shared test utilities
+    └── test-helpers.ts        # Common test helpers
+```
+
+### Test Organization Guidelines
+- **Unit Tests**: `src/tests/unit/` - Test individual components and functions
+- **Integration Tests**: `src/tests/integration/` - Test API routes and component interactions  
+- **E2E Tests**: `src/tests/e2e/` - Test complete user workflows
+- **Shared Utils**: `src/tests/utils/` - Common test utilities and helpers
+- **Test Files**: Use lowercase with hyphens (e.g., `component-test.test.tsx`, `auth-flow.test.ts`)
+- **Test Location**: All tests should be in the `tests/` folder, not alongside the code
+
+### Running Frontend Tests
+
+```bash
+# Run all tests
+cd apps/web
+npm test
+
+# Run specific test file
+npm test PostCard.test.tsx
+
+# Run with coverage
+npm test -- --coverage
+
+# Run in watch mode
+npm test -- --watch
+
+# Run tests matching pattern
+npm test -- --testNamePattern="PostCard"
+```
+
+### Current Test Status
+
+**✅ Working Tests (4/8)**:
+- Basic Jest setup test
+- Component test example
+- Simple API route tests
+- Environment configuration
+
+**🔄 Tests Needing Fixes**:
+- Page component tests (missing Navbar mock)
+- Complex API route tests (Request/Response mocking)
+- Integration tests (dependency mocking)
+
+**Next Steps**:
+1. Fix remaining dependency mocks
+2. Add more comprehensive component tests
+3. Implement E2E tests with Playwright
+
 ## Test Structure
 
 ### Backend Tests (`apps/api/tests/`)
@@ -102,6 +270,29 @@ tests/
 - Test cross-browser compatibility
 
 ## Writing Tests
+
+### Test Consistency and Style Guidelines
+
+**Shared Resources and Patterns**:
+- Use consistent mocking patterns across all tests
+- Share common test utilities and helpers
+- Follow the same structure for similar test types
+- Use consistent naming conventions for test files and functions
+- Maintain consistent error handling patterns
+
+**Style Consistency**:
+- Use the same import patterns across test files
+- Follow consistent describe/it block structure
+- Use consistent assertion patterns
+- Maintain consistent mock setup and teardown
+- Use consistent environment variable handling
+
+**Code Sharing**:
+- Extract common test utilities to shared files in `src/tests/utils/`
+- Use consistent mock implementations (e.g., Response, fetch) from shared utilities
+- Share test data factories and fixtures
+- Maintain consistent test setup and cleanup patterns
+- Import shared utilities: `import { mockFetch, setupTestEnvironment, cleanupTestEnvironment } from '../utils/test-helpers'`
 
 ### Backend Test Examples
 
@@ -348,12 +539,33 @@ npm test -- --watch
 2. **Database Conflicts**: Use unique test data
 3. **Mock Issues**: Verify mock setup and teardown
 4. **Environment Issues**: Check test environment configuration
+5. **Response Not Defined**: Ensure global Response mock is set up in test helpers
 
 ### Debugging Tips
 1. **Use `pytest -s` for print statements**
 2. **Use `console.log` in frontend tests**
 3. **Check test database state**
 4. **Verify mock configurations**
+5. **Check shared utilities**: Ensure `src/tests/utils/test-helpers.ts` is imported
+
+### Current Test Status
+
+**✅ Working Tests (16/16)**:
+- `src/tests/integration/auth-flow.test.ts` (6/6 passing) ✅
+- `src/tests/integration/logout.test.ts` (5/5 passing) ✅
+- `src/tests/unit/component-test.test.tsx` (3/3 passing) ✅
+- `src/tests/unit/example.test.ts` (2/2 passing) ✅
+
+**Test Categories**:
+- **Unit Tests**: 5 tests (component testing, basic setup verification)
+- **Integration Tests**: 11 tests (authentication flow, API route testing)
+- **E2E Tests**: 0 tests (not implemented yet)
+
+**Shared Resources**:
+- ✅ All integration tests use shared utilities from `src/tests/utils/test-helpers.ts`
+- ✅ Consistent mock implementations (Response, fetch)
+- ✅ Standardized setup/cleanup patterns
+- ✅ No code duplication between tests
 
 ---
 

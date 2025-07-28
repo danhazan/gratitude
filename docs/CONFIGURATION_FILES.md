@@ -38,7 +38,7 @@ SECRET_KEY=your-super-secret-key-change-this-in-production
 - **Search Path**: PostgreSQL schema configuration
 
 ### Frontend Environment
-**File**: `apps/web/.env`
+**File**: `apps/web/.env.local`
 **Purpose**: Next.js frontend configuration
 **Content**:
 ```env
@@ -50,9 +50,9 @@ NEXTAUTH_JWT_ENCRYPTION=false
 ```
 **Key Settings**:
 - **NextAuth Secret**: Authentication encryption
-- **Database URL**: Prisma database connection
+- **Database URL**: Database connection (for any direct DB access)
 - **NextAuth URL**: Authentication callback URL
-- **API URL**: Backend API endpoint
+- **API URL**: Backend API endpoint for proxy requests
 - **JWT Encryption**: Disabled for development
 
 ### Frontend Environment Templates
@@ -88,10 +88,15 @@ NEXTAUTH_JWT_ENCRYPTION=false
 **Purpose**: Node.js dependencies and scripts for Next.js frontend
 **Key Dependencies**:
 - `next` - React framework
-- `react` - UI library
+- `react` & `react-dom` - UI library
 - `typescript` - Type safety
 - `tailwindcss` - Styling
 - `@radix-ui` - UI components
+- `@testing-library/react` - Component testing
+- `jest` - Testing framework
+- `jest-environment-jsdom` - DOM testing environment
+- `@jest/globals` - Jest globals for TypeScript
+- `node-mocks-http` - HTTP request mocking
 
 ### TypeScript Configuration
 **File**: `apps/web/tsconfig.json`
@@ -101,6 +106,26 @@ NEXTAUTH_JWT_ENCRYPTION=false
 - Next.js integration
 - Path mapping
 - Module resolution
+
+### Testing Configuration
+**File**: `apps/web/jest.config.js`
+**Purpose**: Jest testing framework configuration
+**Features**:
+- **Test Environment**: `jsdom` for DOM testing
+- **Setup File**: `src/tests/setup.ts` for global test configuration
+- **Path Mapping**: `@/` maps to `src/` for imports
+- **File Extensions**: Supports `.ts` and `.tsx` files
+- **Module Transform**: Uses `ts-jest` for TypeScript compilation
+- **Test Matching**: Finds tests in `src/tests/` and `src/app/` directories
+
+### Test Setup
+**File**: `apps/web/src/tests/setup.ts`
+**Purpose**: Global test configuration and mocks
+**Features**:
+- Environment variable setup for tests
+- Mock implementations for Next.js components
+- Global Response and Request mocks
+- Navigation and server component mocks
 
 ## 🗄️ Database Configuration
 
@@ -146,11 +171,14 @@ grateful/
 │   │   ├── requirements.txt # Python dependencies
 │   │   └── pytest.ini     # Test configuration
 │   └── web/
-│       ├── .env           # Frontend environment
+│       ├── .env.local     # Frontend environment
 │       ├── .env.example   # Environment template
-│       ├── .env.local     # Local overrides
 │       ├── package.json   # Node.js dependencies
-│       └── tsconfig.json  # TypeScript configuration
+│       ├── package-lock.json # Locked dependency versions
+│       ├── jest.config.js # Jest testing configuration
+│       ├── tsconfig.json  # TypeScript configuration
+│       ├── next.config.js # Next.js configuration
+│       └── tailwind.config.js # Tailwind CSS configuration
 └── infrastructure/
     └── docker-compose.yml # Local development setup
 ```
@@ -185,6 +213,13 @@ nano apps/web/.env.local
 nano apps/api/.env
 ```
 
+### 2. Frontend Testing Setup
+```bash
+cd apps/web
+npm install
+npm test  # Run all tests
+```
+
 ### 2. Database Setup
 ```bash
 # Start database services
@@ -196,7 +231,7 @@ cd apps/api
 alembic upgrade head
 ```
 
-### 3. Dependencies Installation
+### 4. Dependencies Installation
 ```bash
 # Backend dependencies
 cd apps/api
@@ -232,6 +267,8 @@ npm install
 2. **Environment Variables**: Ensure all required variables are set
 3. **Port Conflicts**: Check if ports 3000, 8000, 5432 are available
 4. **Dependencies**: Run `npm install` and `pip install -r requirements.txt`
+5. **Test Failures**: Ensure Jest environment is properly configured with `jsdom`
+6. **Lockfile Conflicts**: Remove conflicting `package-lock.json` files in parent directories
 
 ### Configuration Validation
 - **Backend**: Check `uvicorn main:app --reload` starts successfully
