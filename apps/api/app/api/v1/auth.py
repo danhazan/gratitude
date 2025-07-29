@@ -1,71 +1,111 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+"""
+Authentication endpoints.
+"""
+
+from datetime import datetime, timedelta, timezone
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
-from pydantic import BaseModel
-from passlib.context import CryptContext
+from app.models.user import User
+from app.schemas.auth import UserCreate, UserLogin, Token
+from app.core.security import create_access_token, get_password_hash, verify_password
 import jwt
-import os
-from datetime import datetime, timedelta
-from app.schemas.user import UserCreate, UserOut
-from app.crud.user import create_user, get_user_by_email, get_user_by_username, get_user_by_id
 
-router = APIRouter()
-
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here")
+# Constants
+SECRET_KEY = "your-secret-key-here"  # Should be in environment variables
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+router = APIRouter()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-class LoginRequest(BaseModel):
-    email: str
-    password: str
+@router.post("/signup", status_code=status.HTTP_201_CREATED)
+async def signup(user: UserCreate, db: AsyncSession = Depends(get_db)):
+    """Create new user."""
+    # Check if user exists
+    db_user = await User.get_by_email(db, user.email)
+    if db_user:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email already exists"
+        )
+    
+    # Create new user
+    hashed_password = get_password_hash(user.password)
+    db_user = User(
+        email=user.email,
+        username=user.username,
+        hashed_password=hashed_password
+    )
+    
+    db.add(db_user)
+    await db.commit()
+    await db.refresh(db_user)
+    
+    # Create access token
+    to_encode = {
+        "sub": db_user.id,
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    }
+    access_token = create_access_token(to_encode)
+    
+    return {
+        "id": db_user.id,
+        "email": db_user.email,
+        "username": db_user.username,
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
 
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
+@router.post("/login")
+async def login(user: UserLogin, db: AsyncSession = Depends(get_db)):
+    """Login user."""
+    db_user = await User.get_by_email(db, user.email)
+    if not db_user or not verify_password(user.password, db_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password"
+        )
+    
+    # Create access token
+    to_encode = {
+        "sub": db_user.id,
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    }
+    access_token = create_access_token(to_encode)
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
 
-@router.post("/login", response_model=TokenResponse)
-async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
-    db_user = await get_user_by_email(db, data.email)
-    if not db_user:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    if not pwd_context.verify(data.password, db_user.hashed_password):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    to_encode = {"sub": db_user.id, "exp": datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)}
-    token = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return {"access_token": token, "token_type": "bearer"}
-
-@router.get("/session", response_model=UserOut)
-async def get_session(request: Request, db: AsyncSession = Depends(get_db)):
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    token = auth_header.replace("Bearer ", "")
+@router.get("/session")
+async def get_session(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
+    """Get current user session."""
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub")
         if not user_id:
-            raise HTTPException(status_code=401, detail="Invalid token")
-        user_id = int(user_id)  # Cast to int
-    except (jwt.PyJWTError, ValueError):
-        raise HTTPException(status_code=401, detail="Invalid token")
-    
-    db_user = await get_user_by_id(db, user_id)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token"
+            )
+    except jwt.PyJWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token"
+        )
+
+    db_user = await User.get_by_id(db, user_id)
     if not db_user:
-        raise HTTPException(status_code=401, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found"
+        )
     return db_user
 
-# Logout is a no-op for JWT, but endpoint provided for completeness
 @router.post("/logout")
 async def logout():
-    return {"message": "Logged out (client should delete token)"}
-
-@router.post("/signup", response_model=UserOut, status_code=status.HTTP_201_CREATED)
-async def signup(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
-    if await get_user_by_email(db, user_in.email):
-        raise HTTPException(status_code=409, detail="Email already exists")
-    if await get_user_by_username(db, user_in.username):
-        raise HTTPException(status_code=409, detail="Username already exists")
-    user = await create_user(db, user_in)
-    return user 
+    """Logout user."""
+    return {"message": "Successfully logged out"} 
