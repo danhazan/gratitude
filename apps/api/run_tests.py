@@ -13,7 +13,7 @@ def run_basic_tests():
     print("🧪 Running basic endpoint tests...")
     result = subprocess.run([
         sys.executable, "-m", "pytest", 
-        "tests/unit/test_basic_endpoints.py", 
+        "tests/unit/test_basic.py", 
         "-v", "--tb=short"
     ], capture_output=True, text=True, timeout=30)
     

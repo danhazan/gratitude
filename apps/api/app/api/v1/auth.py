@@ -7,7 +7,7 @@ import jwt
 import os
 from datetime import datetime, timedelta
 from app.schemas.user import UserCreate, UserOut
-from app.crud.user import create_user, get_user_by_email, get_user_by_username
+from app.crud.user import create_user, get_user_by_email, get_user_by_username, get_user_by_id
 
 router = APIRouter()
 
@@ -36,7 +36,7 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
     token = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return {"access_token": token, "token_type": "bearer"}
 
-@router.get("/session")
+@router.get("/session", response_model=UserOut)
 async def get_session(request: Request, db: AsyncSession = Depends(get_db)):
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
@@ -47,12 +47,14 @@ async def get_session(request: Request, db: AsyncSession = Depends(get_db)):
         user_id = payload.get("sub")
         if not user_id:
             raise HTTPException(status_code=401, detail="Invalid token")
-    except jwt.PyJWTError:
+        user_id = int(user_id)  # Cast to int
+    except (jwt.PyJWTError, ValueError):
         raise HTTPException(status_code=401, detail="Invalid token")
-    raise HTTPException(status_code=501, detail="User lookup not implemented")
-    if not db_user or not db_user.is_active:
-        raise HTTPException(status_code=401, detail="User not found or inactive")
-    return {"id": db_user.id, "email": db_user.email, "username": db_user.username}
+    
+    db_user = await get_user_by_id(db, user_id)
+    if not db_user:
+        raise HTTPException(status_code=401, detail="User not found")
+    return db_user
 
 # Logout is a no-op for JWT, but endpoint provided for completeness
 @router.post("/logout")
@@ -62,8 +64,8 @@ async def logout():
 @router.post("/signup", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 async def signup(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
     if await get_user_by_email(db, user_in.email):
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(status_code=409, detail="Email already exists")
     if await get_user_by_username(db, user_in.username):
-        raise HTTPException(status_code=400, detail="Username already taken")
+        raise HTTPException(status_code=409, detail="Username already exists")
     user = await create_user(db, user_in)
     return user 

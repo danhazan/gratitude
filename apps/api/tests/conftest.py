@@ -7,13 +7,13 @@ import pytest_asyncio
 import asyncio
 import os
 import jwt
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
-from app.core.database import Base, TEST_DATABASE_URL
-from app.models import user, post, interaction
+
 import httpx
 from httpx import AsyncClient, ASGITransport
+from datetime import datetime, timedelta
 
 # Set testing environment
 os.environ["TESTING"] = "true"
@@ -22,31 +22,45 @@ os.environ["TESTING"] = "true"
 SECRET_KEY = "your-secret-key-here"
 ALGORITHM = "HS256"
 
-# Test database engine
+# Test database engine - Use PostgreSQL for testing to match production
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "postgresql+asyncpg://postgres:iamgreatful@localhost:5432/grateful_test")
-test_engine = create_async_engine(
-    TEST_DATABASE_URL,
-    echo=True,
-    pool_pre_ping=True,
-)
 
-# Test session factory
-TestingSessionLocal = sessionmaker(
-    test_engine,
-    class_=AsyncSession,
-    expire_on_commit=False
-)
-
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def event_loop():
-    """Create an instance of the default event loop for the test session."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
+    """Create an instance of the default event loop for each test function."""
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
     yield loop
     loop.close()
 
-@pytest_asyncio.fixture(scope="session")
-async def test_db_setup():
+@pytest.fixture(scope="function")
+def test_engine(event_loop):
+    """Create a test database engine."""
+    engine = create_async_engine(
+        TEST_DATABASE_URL,
+        echo=True,
+        pool_pre_ping=True,
+    )
+    yield engine
+    event_loop.run_until_complete(engine.dispose())
+
+@pytest.fixture(scope="function")
+def session_factory(test_engine):
+    """Create a session factory."""
+    return async_sessionmaker(
+        test_engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+        autoflush=False
+    )
+
+@pytest_asyncio.fixture(scope="function")
+async def test_db_setup(test_engine):
     """Set up test database tables."""
+    from app.core.database import Base
+    
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
@@ -54,14 +68,9 @@ async def test_db_setup():
         await conn.run_sync(Base.metadata.drop_all)
 
 @pytest_asyncio.fixture
-async def db_session():
+async def db_session(session_factory, test_db_setup):
     """Create a new database session for a test."""
-    # Create tables for this test
-    async with test_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    
-    # Create session
-    async with TestingSessionLocal() as session:
+    async with session_factory() as session:
         try:
             yield session
         finally:
@@ -116,20 +125,14 @@ async def test_user(db_session):
     hashed_password = pwd_context.hash(password)
 
     user = User(
-        id=str(uuid.uuid4()),
         email=f"test-{uuid.uuid4()}@example.com",
-        username=f"testuser{uuid.uuid4().hex[:8]}",  # Remove hyphen
-        full_name="Test User",
-        bio="A test user for testing",
-        is_verified=True,
-        is_active=True,
+        username=f"testuser{uuid.uuid4().hex[:8]}",
         hashed_password=hashed_password
     )
 
     db_session.add(user)
     await db_session.commit()
     await db_session.refresh(user)
-
     return user
 
 @pytest_asyncio.fixture
@@ -144,13 +147,8 @@ async def test_user2(db_session):
     hashed_password = pwd_context.hash(password)
 
     user = User(
-        id=str(uuid.uuid4()),
         email=f"test2-{uuid.uuid4()}@example.com",
-        username=f"testuser2{uuid.uuid4().hex[:8]}",  # Remove hyphen
-        full_name="Test User 2",
-        bio="A second test user for testing",
-        is_verified=True,
-        is_active=True,
+        username=f"testuser2{uuid.uuid4().hex[:8]}",
         hashed_password=hashed_password
     )
 
@@ -167,10 +165,9 @@ async def test_post(db_session, test_user):
     import uuid
     
     post = Post(
-        id=str(uuid.uuid4()),
         author_id=test_user.id,
         content="This is a test post content",
-        post_type=PostType.DAILY,  # Use proper enum
+        post_type=PostType.DAILY,
         is_public=True
     )
     
@@ -183,15 +180,19 @@ async def test_post(db_session, test_user):
 @pytest.fixture
 def create_test_token():
     """Create a JWT token for testing."""
-    def _create_token(user_id: str):
-        payload = {"sub": user_id, "type": "access"}
-        return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+    def _create_token(user_id: int):
+        payload = {
+            "sub": user_id,
+            "exp": datetime.utcnow() + timedelta(minutes=60 * 24 * 7)  # 7 days, same as login
+        }
+        token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+        return token
     return _create_token
 
 @pytest.fixture
 def auth_headers(create_test_token):
     """Create authentication headers for testing."""
-    def _auth_headers(user_id: str):
+    def _auth_headers(user_id: int):
         token = create_test_token(user_id)
         return {"Authorization": f"Bearer {token}"}
     return _auth_headers 

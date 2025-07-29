@@ -1,5 +1,4 @@
 from sqlalchemy import Column, String, DateTime, Text, ForeignKey, JSON, Integer
-from sqlalchemy.orm import relationship
 from app.core.database import Base
 import datetime
 import uuid
@@ -18,4 +17,5 @@ class Notification(Base):
     read_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
-    user = relationship("User", back_populates="notifications") 
+    def __repr__(self):
+        return f"<Notification(id={self.id}, user_id={self.user_id}, type={self.type})>" 
