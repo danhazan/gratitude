@@ -4,13 +4,10 @@ Unit tests for authentication endpoints.
 
 import pytest
 import pytest_asyncio
+import uuid
 from httpx import AsyncClient
 from app.models.user import User
-from passlib.context import CryptContext
-import uuid
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
+from tests.utils.factories import UserFactory
 
 @pytest_asyncio.fixture
 async def test_user_data():
@@ -23,6 +20,13 @@ async def test_user_data():
         "password": "testpassword123"
     }
 
+@pytest_asyncio.fixture
+async def test_user(db_session):
+    """Create a test user using the factory."""
+    user = UserFactory.create_user(db_session)
+    await db_session.commit()
+    await db_session.refresh(user)
+    return user
 
 class TestAuthEndpoints:
     """Test authentication endpoints."""
@@ -77,7 +81,7 @@ class TestAuthEndpoints:
         """Test successful login."""
         login_data = {
             "email": test_user.email,
-            "password": "testpassword"  # From fixture
+            "password": "testpassword123"  # Default password from factory
         }
         
         response = await async_client.post("/api/v1/auth/login", json=login_data)
@@ -107,10 +111,9 @@ class TestAuthEndpoints:
 
     @pytest.mark.skip(reason="Session endpoint needs to be fixed after removing full_name field")
     @pytest.mark.asyncio
-    async def test_session_valid_token(self, async_client: AsyncClient, test_user, auth_headers):
+    async def test_session_valid_token(self, async_client: AsyncClient, test_user):
         """Test session check with valid token."""
-        # Create a valid token for the test user
-        headers = auth_headers(test_user.id)
+        headers = UserFactory.get_auth_headers(test_user.id)
         
         response = await async_client.get("/api/v1/auth/session", headers=headers)
         
@@ -143,9 +146,9 @@ class TestAuthEndpoints:
         assert "detail" in data
 
     @pytest.mark.asyncio
-    async def test_logout_success(self, async_client: AsyncClient, test_user, auth_headers):
+    async def test_logout_success(self, async_client: AsyncClient, test_user):
         """Test successful logout."""
-        headers = auth_headers(test_user.id)
+        headers = UserFactory.get_auth_headers(test_user.id)
         
         response = await async_client.post("/api/v1/auth/logout", headers=headers)
         

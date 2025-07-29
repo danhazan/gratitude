@@ -1,12 +1,7 @@
-from .user import *
-from .post import *
-from .interaction import *
-from .notification import *
+"""
+Schema exports.
+"""
 
-__all__ = [
-    "UserCreate",
-    "PostBase", "PostCreate", "PostUpdate", "PostResponse", "PostWithAuthor", "PostList", "PostType",
-    "LikeCreate", "LikeResponse",
-    "CommentBase", "CommentCreate", "CommentUpdate", "CommentResponse", "CommentWithAuthor",
-    "FollowCreate", "FollowResponse"
-] 
+from .auth import UserCreate, UserLogin, Token
+
+__all__ = ["UserCreate", "UserLogin", "Token"] 
