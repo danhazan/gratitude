@@ -249,7 +249,7 @@ End-to-end workflows:
 - Proper test fixtures and setup
 
 ### 2. **Test Data Management**
-- Isolated test database (SQLite in-memory)
+- Isolated test database (PostgreSQL test database)
 - Clean test data for each test
 - Proper test fixtures
 

@@ -192,7 +192,7 @@ grateful/
 
 ### Database Configuration
 - **Development**: Local PostgreSQL with Docker
-- **Testing**: SQLite in-memory database
+- **Testing**: PostgreSQL test database
 - **Production**: Managed PostgreSQL service
 
 ### Frontend Configuration

@@ -200,7 +200,7 @@ The database uses Alembic for migrations. Current migration files:
 
 ## Development Notes
 
-- **Test Database**: Uses SQLite for testing with in-memory storage
+- **Test Database**: Uses PostgreSQL test database for production-like testing
 - **Production Database**: Uses PostgreSQL with proper indexing
 - **Async Operations**: All database operations are async using SQLAlchemy 2.0
 - **UUID Usage**: Posts, likes, comments, follows, and notifications use UUID primary keys
