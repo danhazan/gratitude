@@ -4,10 +4,8 @@ Test factories for creating test data.
 
 import uuid
 from datetime import datetime, timedelta, timezone
-from passlib.context import CryptContext
+import bcrypt
 from app.models.user import User
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class UserFactory:
     """Factory for creating test users."""
@@ -21,18 +19,13 @@ class UserFactory:
         defaults = {
             "email": f"test-{unique_id}@example.com",
             "username": f"testuser{unique_id}",
-            "hashed_password": pwd_context.hash("testpassword123")
+            "hashed_password": bcrypt.hashpw("testpassword123".encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         }
         
         # Override defaults with any provided values
         user_data = {**defaults, **kwargs}
-        
-        # Create user instance
         user = User(**user_data)
-        
-        if db_session:
-            db_session.add(user)
-            
+        db_session.add(user)
         return user
 
     @staticmethod
