@@ -5,9 +5,12 @@ Unit tests for authentication endpoints.
 import pytest
 import pytest_asyncio
 import uuid
+import jwt
+from datetime import datetime, timedelta, timezone
 from httpx import AsyncClient
 from app.models.user import User
 from tests.utils.factories import UserFactory
+from app.core.security import SECRET_KEY, ALGORITHM
 
 @pytest_asyncio.fixture
 async def test_user_data():
@@ -113,7 +116,13 @@ class TestAuthEndpoints:
     @pytest.mark.asyncio
     async def test_session_valid_token(self, async_client: AsyncClient, test_user):
         """Test session check with valid token."""
-        headers = UserFactory.get_auth_headers(test_user.id)
+        # Create valid token
+        token_data = {
+            "sub": test_user.id,
+            "exp": datetime.now(timezone.utc) + timedelta(days=1)
+        }
+        token = jwt.encode(token_data, SECRET_KEY, algorithm=ALGORITHM)
+        headers = {"Authorization": f"Bearer {token}"}
         
         response = await async_client.get("/api/v1/auth/session", headers=headers)
         
@@ -121,9 +130,27 @@ class TestAuthEndpoints:
         data = response.json()
         
         # Check response structure
-        assert "id" in data
+        assert data["id"] == test_user.id
         assert data["email"] == test_user.email
         assert data["username"] == test_user.username
+
+    @pytest.mark.asyncio
+    async def test_session_expired_token(self, async_client: AsyncClient, test_user):
+        """Test session check with expired token."""
+        # Create expired token
+        token_data = {
+            "sub": test_user.id,
+            "exp": datetime.now(timezone.utc) - timedelta(days=1)
+        }
+        token = jwt.encode(token_data, SECRET_KEY, algorithm=ALGORITHM)
+        headers = {"Authorization": f"Bearer {token}"}
+        
+        response = await async_client.get("/api/v1/auth/session", headers=headers)
+        
+        assert response.status_code == 401
+        data = response.json()
+        assert "detail" in data
+        assert "invalid token" in data["detail"].lower()
 
     @pytest.mark.asyncio
     async def test_session_invalid_token(self, async_client: AsyncClient):
@@ -148,7 +175,13 @@ class TestAuthEndpoints:
     @pytest.mark.asyncio
     async def test_logout_success(self, async_client: AsyncClient, test_user):
         """Test successful logout."""
-        headers = UserFactory.get_auth_headers(test_user.id)
+        # Create valid token
+        token_data = {
+            "sub": test_user.id,
+            "exp": datetime.now(timezone.utc) + timedelta(days=1)
+        }
+        token = jwt.encode(token_data, SECRET_KEY, algorithm=ALGORITHM)
+        headers = {"Authorization": f"Bearer {token}"}
         
         response = await async_client.post("/api/v1/auth/logout", headers=headers)
         
@@ -166,9 +199,48 @@ class TestAuthEndpoints:
         data = response.json()
         assert "message" in data
 
-
 class TestAuthValidation:
     """Test authentication validation and edge cases."""
+
+    @pytest.mark.asyncio
+    async def test_signup_username_validation(self, async_client: AsyncClient, test_user_data):
+        """Test username validation rules."""
+        # Test too short username
+        data = test_user_data.copy()
+        data["username"] = "ab"  # Less than 3 characters
+        response = await async_client.post("/api/v1/auth/signup", json=data)
+        assert response.status_code == 422
+
+        # Test too long username
+        data["username"] = "a" * 51  # More than 50 characters
+        response = await async_client.post("/api/v1/auth/signup", json=data)
+        assert response.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_signup_email_validation(self, async_client: AsyncClient, test_user_data):
+        """Test email format validation."""
+        invalid_emails = [
+            "not-an-email",
+            "missing@tld",
+            "@notld.com",
+            "spaces in@email.com",
+            "unicode@🦄.com"
+        ]
+        
+        for invalid_email in invalid_emails:
+            data = test_user_data.copy()
+            data["email"] = invalid_email
+            response = await async_client.post("/api/v1/auth/signup", json=data)
+            assert response.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_signup_password_validation(self, async_client: AsyncClient, test_user_data):
+        """Test password strength validation."""
+        # Test too short password
+        data = test_user_data.copy()
+        data["password"] = "short"
+        response = await async_client.post("/api/v1/auth/signup", json=data)
+        assert response.status_code == 422
 
     @pytest.mark.asyncio
     async def test_signup_missing_fields(self, async_client: AsyncClient):
