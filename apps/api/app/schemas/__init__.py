@@ -2,6 +2,6 @@
 Schema exports.
 """
 
-from .auth import UserCreate, UserLogin, Token
+from .auth import UserCreate, UserLogin, Token, TokenData
 
-__all__ = ["UserCreate", "UserLogin", "Token"] 
+__all__ = ["UserCreate", "UserLogin", "Token", "TokenData"] 

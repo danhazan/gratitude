@@ -25,3 +25,10 @@ class Token(BaseModel):
     
     access_token: str
     token_type: str = "bearer"
+
+class TokenData(BaseModel):
+    """Schema for token payload."""
+    model_config = ConfigDict(from_attributes=True)
+    
+    sub: int  # User ID
+    exp: int  # Expiration timestamp

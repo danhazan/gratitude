@@ -18,18 +18,16 @@ os.environ["TESTING"] = "true"
 # Test database engine - Use PostgreSQL for testing to match production
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "postgresql+asyncpg://postgres:iamgreatful@localhost:5432/grateful_test")
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def event_loop():
-    """Create an instance of the default event loop for each test function."""
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
+    """Create an instance of the default event loop for each test session."""
+    policy = asyncio.get_event_loop_policy()
+    loop = policy.new_event_loop()
     yield loop
     loop.close()
 
-@pytest.fixture(scope="function")
-def test_engine(event_loop):
+@pytest_asyncio.fixture(scope="function")
+async def test_engine():
     """Create a test database engine."""
     engine = create_async_engine(
         TEST_DATABASE_URL,
@@ -37,7 +35,7 @@ def test_engine(event_loop):
         pool_pre_ping=True,
     )
     yield engine
-    event_loop.run_until_complete(engine.dispose())
+    await engine.dispose()
 
 @pytest.fixture(scope="function")
 def session_factory(test_engine):

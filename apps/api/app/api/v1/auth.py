@@ -4,12 +4,12 @@ Authentication endpoints.
 
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.models.user import User
-from app.schemas.auth import UserCreate, UserLogin, Token
-from app.core.security import create_access_token, get_password_hash, verify_password
+from app.schemas.auth import UserCreate, UserLogin, Token, TokenData
+from app.core.security import create_access_token, get_password_hash, verify_password, decode_token
 import jwt
 
 # Constants
@@ -18,7 +18,7 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 
 router = APIRouter()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+security = HTTPBearer()
 
 @router.post("/signup", status_code=status.HTTP_201_CREATED)
 async def signup(user: UserCreate, db: AsyncSession = Depends(get_db)):
@@ -44,11 +44,12 @@ async def signup(user: UserCreate, db: AsyncSession = Depends(get_db)):
     await db.refresh(db_user)
     
     # Create access token
-    to_encode = {
-        "sub": db_user.id,
-        "exp": datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    }
-    access_token = create_access_token(to_encode)
+    expiration = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    token_data = TokenData(
+        sub=db_user.id,
+        exp=int(expiration.timestamp())
+    )
+    access_token = create_access_token(token_data.model_dump())
     
     return {
         "id": db_user.id,
@@ -58,7 +59,7 @@ async def signup(user: UserCreate, db: AsyncSession = Depends(get_db)):
         "token_type": "bearer"
     }
 
-@router.post("/login")
+@router.post("/login", response_model=Token)
 async def login(user: UserLogin, db: AsyncSession = Depends(get_db)):
     """Login user."""
     db_user = await User.get_by_email(db, user.email)
@@ -69,11 +70,12 @@ async def login(user: UserLogin, db: AsyncSession = Depends(get_db)):
         )
     
     # Create access token
-    to_encode = {
-        "sub": db_user.id,
-        "exp": datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    }
-    access_token = create_access_token(to_encode)
+    expiration = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    token_data = TokenData(
+        sub=db_user.id,
+        exp=int(expiration.timestamp())
+    )
+    access_token = create_access_token(token_data.model_dump())
     
     return {
         "access_token": access_token,
@@ -81,23 +83,30 @@ async def login(user: UserLogin, db: AsyncSession = Depends(get_db)):
     }
 
 @router.get("/session")
-async def get_session(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
+async def get_session(auth: HTTPAuthorizationCredentials = Depends(security), db: AsyncSession = Depends(get_db)):
     """Get current user session."""
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = payload.get("sub")
-        if not user_id:
+        # Decode and validate token
+        payload = decode_token(auth.credentials)
+        token_data = TokenData(**payload)
+        
+        if not token_data.sub:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token"
             )
-    except jwt.PyJWTError:
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has expired"
+        )
+    except (jwt.PyJWTError, ValueError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token"
         )
 
-    db_user = await User.get_by_id(db, user_id)
+    db_user = await User.get_by_id(db, token_data.sub)
     if not db_user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
