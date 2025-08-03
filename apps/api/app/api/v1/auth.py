@@ -2,6 +2,7 @@
 Authentication endpoints.
 """
 
+import logging
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -12,8 +13,11 @@ from app.schemas.auth import UserCreate, UserLogin, Token, TokenData
 from app.core.security import create_access_token, get_password_hash, verify_password, decode_token
 import jwt
 
+# Set up logging
+logger = logging.getLogger(__name__)
+
 # Constants
-SECRET_KEY = "your-secret-key-here"  # Should be in environment variables
+SECRET_KEY = "your-super-secret-key-change-this-in-production"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 
@@ -46,7 +50,7 @@ async def signup(user: UserCreate, db: AsyncSession = Depends(get_db)):
     # Create access token
     expiration = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     token_data = TokenData(
-        sub=db_user.id,
+        sub=str(db_user.id),  # Convert to string for JWT
         exp=int(expiration.timestamp())
     )
     access_token = create_access_token(token_data.model_dump())
@@ -72,7 +76,7 @@ async def login(user: UserLogin, db: AsyncSession = Depends(get_db)):
     # Create access token
     expiration = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     token_data = TokenData(
-        sub=db_user.id,
+        sub=str(db_user.id),  # Convert to string for JWT
         exp=int(expiration.timestamp())
     )
     access_token = create_access_token(token_data.model_dump())
@@ -83,36 +87,57 @@ async def login(user: UserLogin, db: AsyncSession = Depends(get_db)):
     }
 
 @router.get("/session")
-async def get_session(auth: HTTPAuthorizationCredentials = Depends(security), db: AsyncSession = Depends(get_db)):
+async def get_session(
+    auth: HTTPAuthorizationCredentials = Depends(security), 
+    db: AsyncSession = Depends(get_db)
+):
     """Get current user session."""
     try:
-        # Decode and validate token
-        payload = decode_token(auth.credentials)
-        token_data = TokenData(**payload)
+        logger.info(f"Received token: {auth.credentials[:20]}...")  # Log first 20 chars
         
-        if not token_data.sub:
+        # Step 1: Decode token
+        payload = decode_token(auth.credentials)
+        logger.info(f"Token payload: {payload}")
+        
+        # Step 2: Create token data
+        token_data = TokenData(**payload)
+        logger.info(f"Token data: {token_data}")
+        
+        # Step 3: Get user from database (convert string ID back to int)
+        user_id = int(token_data.sub)
+        db_user = await User.get_by_id(db, user_id)
+        logger.info(f"Found user: {db_user.email if db_user else 'None'}")
+        
+        if not db_user:
+            logger.error("User not found in database")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token"
+                detail="User not found"
             )
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token has expired"
-        )
-    except (jwt.PyJWTError, ValueError):
+        
+        return {
+            "id": db_user.id,
+            "email": db_user.email,
+            "username": db_user.username
+        }
+    except jwt.PyJWTError as e:
+        logger.error(f"JWT Error: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token"
         )
-
-    db_user = await User.get_by_id(db, token_data.sub)
-    if not db_user:
+    except ValueError as e:
+        logger.error(f"Value Error: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found"
+            detail="Invalid token data"
         )
-    return db_user
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication failed"
+        )
 
 @router.post("/logout")
 async def logout():

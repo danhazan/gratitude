@@ -7,7 +7,7 @@ import jwt
 from datetime import datetime, timedelta, timezone
 
 # Constants
-SECRET_KEY = "your-secret-key-here"  # Should be in environment variables
+SECRET_KEY = "your-super-secret-key-change-this-in-production"  # Should be in environment variables
 ALGORITHM = "HS256"
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:

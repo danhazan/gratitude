@@ -2,15 +2,15 @@
 Authentication schemas.
 """
 
-from pydantic import BaseModel, EmailStr, constr, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 class UserCreate(BaseModel):
     """Schema for user creation."""
     model_config = ConfigDict(from_attributes=True)
     
     email: EmailStr
-    username: constr(min_length=3, max_length=50)  # type: ignore
-    password: constr(min_length=8)  # type: ignore
+    username: str = Field(..., min_length=3, max_length=50)
+    password: str = Field(..., min_length=8)
 
 class UserLogin(BaseModel):
     """Schema for user login."""
@@ -30,5 +30,5 @@ class TokenData(BaseModel):
     """Schema for token payload."""
     model_config = ConfigDict(from_attributes=True)
     
-    sub: int  # User ID
+    sub: str  # User ID as string (JWT requirement)
     exp: int  # Expiration timestamp
